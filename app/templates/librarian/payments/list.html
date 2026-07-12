@@ -239,15 +239,26 @@
               </td>
               <td class="text-end">
                 {% if payment.receipt_path %}
-                  <a
-                    href="{{ url_for('static',
-                                     filename=payment.receipt_path) }}"
-                    class="btn btn-sm btn-outline-primary"
-                    target="_blank"
-                    title="Download Receipt"
-                  >
-                    <i class="bi bi-file-earmark-pdf"></i>
-                  </a>
+                  {% if payment.receipt_path.startswith('http') %}
+                    <a
+                      href="{{ payment.receipt_path }}"
+                      class="btn btn-sm btn-outline-primary"
+                      target="_blank"
+                      title="Download Receipt"
+                    >
+                      <i class="bi bi-file-earmark-pdf"></i>
+                    </a>
+                  {% else %}
+                    <a
+                      href="{{ url_for('static',
+                                       filename=payment.receipt_path) }}"
+                      class="btn btn-sm btn-outline-primary"
+                      target="_blank"
+                      title="Download Receipt"
+                    >
+                      <i class="bi bi-file-earmark-pdf"></i>
+                    </a>
+                  {% endif %}
                 {% else %}
                   <small class="text-muted">—</small>
                 {% endif %}
