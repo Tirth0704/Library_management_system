@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Register — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5">
+  <div class="container">
+    <div class="row justify-content-center align-items-stretch g-4">
+      
+      <!-- Left Column: Registration Form -->
+      <div class="col-12 col-lg-7 d-flex">
+        <div class="card shadow-sm border-0 rounded-4 w-100 bg-white">
+          <div class="card-body p-4 p-md-5 d-flex flex-column justify-content-between">
+            <div>
+              <!-- Brand -->
+              <div class="text-center mb-4">
+                <i class="bi bi-book-half fs-1 text-primary"></i>
+                <h4 class="fw-bold mt-1 mb-0">Create Your Account</h4>
+                <p class="text-muted small">LibraryHub 2.0 — Student Registration</p>
+              </div>
+
+              <!-- Flash -->
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} py-2 small">{{ message }}</div>
+                {% endfor %}
+              {% endwith %}
+
+              <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+                {{ form.hidden_tag() }}
+
+                <div class="row g-3">
+                  <!-- Full Name -->
+                  <div class="col-12">
+                    {{ form.full_name.label(class="form-label fw-semibold") }}
+                    {{ form.full_name(
+                        class="form-control" + (" is-invalid" if form.full_name.errors else ""),
+                        placeholder="Your full name"
+                    ) }}
+                    {% for e in form.full_name.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Enrollment Number -->
+                  <div class="col-md-6">
+                    {{ form.enrollment_number.label(class="form-label fw-semibold") }}
+                    {{ form.enrollment_number(
+                        class="form-control" + (" is-invalid" if form.enrollment_number.errors else ""),
+                        placeholder="e.g. EN2024001"
+                    ) }}
+                    {% for e in form.enrollment_number.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Email -->
+                  <div class="col-md-6">
+                    {{ form.email.label(class="form-label fw-semibold") }}
+                    {{ form.email(
+                        class="form-control" + (" is-invalid" if form.email.errors else ""),
+                        placeholder="you@example.com"
+                    ) }}
+                    {% for e in form.email.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Phone -->
+                  <div class="col-md-6">
+                    {{ form.phone_number.label(class="form-label fw-semibold") }}
+                    {{ form.phone_number(
+                        class="form-control" + (" is-invalid" if form.phone_number.errors else ""),
+                        placeholder="10-digit mobile number"
+                    ) }}
+                    {% for e in form.phone_number.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Department -->
+                  <div class="col-md-6">
+                    {{ form.department.label(class="form-label fw-semibold") }}
+                    {{ form.department(
+                        class="form-select" + (" is-invalid" if form.department.errors else "")
+                    ) }}
+                    {% for e in form.department.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Semester -->
+                  <div class="col-md-6">
+                    {{ form.semester.label(class="form-label fw-semibold") }}
+                    {{ form.semester(
+                        class="form-select" + (" is-invalid" if form.semester.errors else "")
+                    ) }}
+                    {% for e in form.semester.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Password -->
+                  <div class="col-md-6">
+                    {{ form.password.label(class="form-label fw-semibold") }}
+                    {{ form.password(
+                        class="form-control" + (" is-invalid" if form.password.errors else ""),
+                        placeholder="Min 8 characters"
+                    ) }}
+                    {% for e in form.password.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Confirm Password -->
+                  <div class="col-md-6">
+                    {{ form.confirm_password.label(class="form-label fw-semibold") }}
+                    {{ form.confirm_password(
+                        class="form-control" + (" is-invalid" if form.confirm_password.errors else ""),
+                        placeholder="Repeat password"
+                    ) }}
+                    {% for e in form.confirm_password.errors %}
+                      <div class="invalid-feedback">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Submit -->
+                  <div class="col-12 mt-2">
+                    {{ form.submit(class="btn btn-primary w-100 fw-semibold") }}
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div class="text-center mt-4 small text-muted">
+              Already have an account?
+              <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
+                Log in
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: WhatsApp Sandbox Connection Instructions -->
+      <div class="col-12 col-lg-5 d-flex">
+        <div class="card shadow-sm border-0 rounded-4 w-100 bg-white">
+          <div class="card-body p-4 p-md-5 d-flex flex-column align-items-center text-center justify-content-center">
+            <div class="mb-4">
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fs-6">
+                <i class="bi bi-whatsapp me-1"></i> WhatsApp Sandbox
+              </span>
+            </div>
+            <h4 class="fw-bold mb-3 text-dark">Connect to WhatsApp</h4>
+            <p class="text-muted small mb-4">
+              To begin receiving automated library alerts (approvals, return confirmations, due reminders, and payment receipts) on WhatsApp, connect your device to the Twilio sandbox before registering.
+            </p>
+            <div class="bg-light p-3 rounded-4 mb-4 border w-100">
+              <img src="{{ url_for('static', filename='img/Whatsapp_Twilio.png') }}" alt="Twilio WhatsApp Sandbox QR" class="img-fluid rounded-3 border shadow-sm" style="max-height: 250px;">
+            </div>
+            <div class="w-100 text-start">
+              <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle me-1 text-primary"></i>How to connect manually:</h6>
+              <ol class="small text-muted ps-3 mb-0">
+                <li class="mb-2">Scan the QR code above or add the number <strong class="text-dark">+1 415 523 8886</strong> to your contacts.</li>
+                <li>Send a WhatsApp message containing <code class="bg-white border px-2 py-0.5 rounded text-dark fw-bold">join wherever-according</code> to start receiving notifications.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

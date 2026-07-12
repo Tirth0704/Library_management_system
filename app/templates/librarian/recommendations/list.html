@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Recommendations — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_books.add_book') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-plus-circle"></i> Add Book
+      </a>
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-lightbulb me-1"></i> Book Recommendations
+    </h5>
+    <small class="text-muted">
+      {{ recommendations|length }} recommendation(s) with status:
+      <strong>{{ status_filter }}</strong>
+    </small>
+  </div>
+</div>
+
+<!-- Status Filter Tabs -->
+<ul class="nav nav-pills mb-3 flex-wrap">
+  {% for status in ['Pending', 'Approved', 'Rejected'] %}
+    <li class="nav-item">
+      <a
+        class="nav-link {{ 'active' if status_filter == status else '' }}"
+        href="{{ url_for('librarian_recommendations.recommendation_list',
+                         status=status) }}"
+      >
+        {% if status == 'Pending' %}<i class="bi bi-clock"></i>
+        {% elif status == 'Approved' %}<i class="bi bi-check-circle"></i>
+        {% elif status == 'Rejected' %}<i class="bi bi-x-circle"></i>{% endif %}
+        {{ status }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% if recommendations %}
+<div class="row g-3">
+  {% for rec in recommendations %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="fw-bold mb-0">{{ rec.book_name }}</h6>
+            {% if rec.status == "Pending" %}
+              <span class="badge bg-warning text-dark">Pending</span>
+            {% elif rec.status == "Approved" %}
+              <span class="badge bg-success">Approved</span>
+            {% else %}
+              <span class="badge bg-danger">Rejected</span>
+            {% endif %}
+          </div>
+
+          <p class="mb-2 small">
+            <i class="bi bi-person text-muted"></i>
+            <span class="text-muted">Author:</span>
+            <strong>{{ rec.author }}</strong>
+          </p>
+
+          {% if rec.publisher %}
+            <p class="mb-2 small">
+              <i class="bi bi-building text-muted"></i>
+              <span class="text-muted">Publisher:</span>
+              {{ rec.publisher }}
+            </p>
+          {% endif %}
+
+          {% if rec.reason %}
+            <div class="alert alert-light py-2 small mb-2">
+              <i class="bi bi-chat-left-quote"></i>
+              <em>{{ rec.reason }}</em>
+            </div>
+          {% endif %}
+
+          <hr class="my-2">
+
+          <div class="small text-muted mb-2">
+            <i class="bi bi-person-circle"></i>
+            Submitted by:
+            <a
+              href="{{ url_for('librarian_students.student_detail',
+                               student_id=rec.student.id) }}"
+              class="text-decoration-none"
+            >
+              {{ rec.student.full_name }}
+            </a>
+          </div>
+
+          <div class="small text-muted mb-3">
+            <i class="bi bi-calendar"></i>
+            {{ rec.submitted_at.strftime('%d %b %Y, %H:%M') }}
+          </div>
+
+          {% if rec.status == "Pending" %}
+            <div class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-success flex-fill"
+                data-bs-toggle="modal"
+                data-bs-target="#approveRecModal-{{ rec.id }}"
+              >
+                <i class="bi bi-check"></i> Approve
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-danger flex-fill"
+                data-bs-toggle="modal"
+                data-bs-target="#rejectRecModal-{{ rec.id }}"
+              >
+                <i class="bi bi-x"></i> Reject
+              </button>
+            </div>
+          {% elif rec.librarian_note %}
+            <div class="alert alert-info py-2 small mb-0">
+              <strong>Note:</strong> {{ rec.librarian_note }}
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Approve Modal -->
+      {% if rec.status == "Pending" %}
+      <div class="modal fade" id="approveRecModal-{{ rec.id }}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form
+              method="POST"
+              action="{{ url_for('librarian_recommendations.approve_recommendation',
+                                 rec_id=rec.id) }}"
+            >
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                  <i class="bi bi-check-circle"></i> Approve Recommendation
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p>
+                  Approve recommendation for
+                  <strong>{{ rec.book_name }}</strong>?
+                </p>
+                <div class="mb-3">
+                  <label class="form-label small">
+                    Note to student (optional)
+                  </label>
+                  <textarea name="note" class="form-control" rows="2"
+                            placeholder="e.g. Added to inventory next week"></textarea>
+                </div>
+                <div class="alert alert-info small mb-0">
+                  <i class="bi bi-info-circle"></i>
+                  After approval, manually add the book via
+                  <strong>Books → Add Book</strong>.
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                  <i class="bi bi-check"></i> Confirm Approval
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reject Modal -->
+      <div class="modal fade" id="rejectRecModal-{{ rec.id }}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form
+              method="POST"
+              action="{{ url_for('librarian_recommendations.reject_recommendation',
+                                 rec_id=rec.id) }}"
+            >
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                  <i class="bi bi-x-circle"></i> Reject Recommendation
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p>
+                  Reject recommendation for
+                  <strong>{{ rec.book_name }}</strong>?
+                </p>
+                <div class="mb-3">
+                  <label class="form-label small">
+                    Reason (optional, sent to student)
+                  </label>
+                  <textarea name="note" class="form-control" rows="2"
+                            placeholder="e.g. Book not in academic scope"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">
+                  <i class="bi bi-x"></i> Confirm Rejection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-lightbulb fs-1 d-block mb-2"></i>
+    <p class="mb-0">
+      No <strong>{{ status_filter }}</strong> recommendations.
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,236 @@
+/* ==========================================================================
+   LibraryHub 2.0 — Main Stylesheet
+   Shared styles across student + librarian panels
+   ========================================================================== */
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background-color: #f5f7fa;
+  color: #2d3748;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* ─── Typography ──────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  color: #1a1a2e;
+  letter-spacing: -0.01em;
+}
+
+code {
+  color: #d63384;
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* ─── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card.book-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-header {
+  font-weight: 600;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: #4c6fff;
+  border-color: #4c6fff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #3a5cf0;
+  border-color: #3a5cf0;
+}
+
+/* ─── Forms ───────────────────────────────────────────────────────────────── */
+.form-control:focus,
+.form-select:focus {
+  border-color: #4c6fff;
+  box-shadow: 0 0 0 0.2rem rgba(76, 111, 255, 0.15);
+}
+
+.form-label {
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.invalid-feedback {
+  font-size: 0.8rem;
+}
+
+/* ─── Tables ──────────────────────────────────────────────────────────────── */
+.table thead th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+/* ─── Badges ──────────────────────────────────────────────────────────────── */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.4em 0.7em;
+}
+
+/* ─── Navbar ──────────────────────────────────────────────────────────────── */
+.navbar-brand {
+  letter-spacing: -0.01em;
+}
+
+.navbar .nav-link {
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+
+.navbar .nav-link.active {
+  font-weight: 600;
+}
+
+.navbar-dark.bg-primary {
+  background-color: #4c6fff !important;
+}
+
+/* ─── Alerts ──────────────────────────────────────────────────────────────── */
+.alert {
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.alert-success {
+  border-left-color: #22c55e;
+}
+
+.alert-warning {
+  border-left-color: #f59e0b;
+}
+
+.alert-danger {
+  border-left-color: #ef4444;
+}
+
+.alert-info {
+  border-left-color: #3b82f6;
+}
+
+/* ─── Auth Pages ──────────────────────────────────────────────────────────── */
+.card.rounded-4 {
+  border-radius: 1rem !important;
+}
+
+/* ─── Modals ──────────────────────────────────────────────────────────────── */
+.modal-header.bg-success,
+.modal-header.bg-danger {
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* ─── Live Search Results ────────────────────────────────────────────────── */
+#live-results {
+  position: relative;
+  z-index: 10;
+}
+
+.live-search-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.live-search-item:hover {
+  background-color: #f0f4ff;
+}
+
+/* ─── Empty States ────────────────────────────────────────────────────────── */
+.card-body i.fs-1,
+.card-body i.fs-3 {
+  opacity: 0.6;
+}
+
+/* ─── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+}
+
+/* ─── Print (for receipts view) ──────────────────────────────────────────── */
+@media print {
+  .navbar,
+  .footer,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ─── Utilities ───────────────────────────────────────────────────────────── */
+.text-nowrap {
+  white-space: nowrap;
+}
+
+.min-vh-100 {
+  min-height: 100vh;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* ─── Scrollbar (Webkit) ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  h4, h5 {
+    font-size: 1.1rem;
+  }
+
+  .btn-sm {
+    font-size: 0.75rem;
+  }
+}

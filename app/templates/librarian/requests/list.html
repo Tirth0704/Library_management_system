@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Book Requests — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-clock-history me-1"></i> Book Requests
+    </h5>
+    <small class="text-muted">
+      {{ requests|length }} request(s) with status: <strong>{{ status_filter }}</strong>
+    </small>
+  </div>
+</div>
+
+<!-- Status Filter Tabs -->
+<ul class="nav nav-pills mb-3 flex-wrap">
+  {% for status in ['Pending', 'Approved', 'Rejected', 'Hold', 'Cancelled'] %}
+    <li class="nav-item">
+      <a
+        class="nav-link {{ 'active' if status_filter == status else '' }}"
+        href="{{ url_for('librarian_requests.request_list', status=status) }}"
+      >
+        {% if status == 'Pending' %}<i class="bi bi-clock"></i>
+        {% elif status == 'Approved' %}<i class="bi bi-check-circle"></i>
+        {% elif status == 'Rejected' %}<i class="bi bi-x-circle"></i>
+        {% elif status == 'Hold' %}<i class="bi bi-pause-circle"></i>
+        {% elif status == 'Cancelled' %}<i class="bi bi-x"></i>
+        {% endif %}
+        {{ status }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% if requests %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Student</th>
+            <th>Book</th>
+            <th>Requested On</th>
+            <th>Available</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ req.student.full_name }}</div>
+                <small class="text-muted">
+                  {{ req.student.enrollment_number }} ·
+                  Score: {{ req.student.behaviour_score }}
+                </small>
+              </td>
+              <td>
+                <div class="fw-semibold">{{ req.book.title }}</div>
+                <small class="text-muted">by {{ req.book.author }}</small>
+              </td>
+              <td>
+                <small>{{ req.requested_at.strftime('%d %b %Y') }}</small><br>
+                <small class="text-muted">
+                  {{ req.requested_at.strftime('%H:%M') }}
+                </small>
+              </td>
+              <td>
+                {% if req.book.available_copies > 0 %}
+                  <span class="badge bg-success">
+                    {{ req.book.available_copies }} available
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger">Out of stock</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if req.status == 'Pending' %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#approveModal-{{ req.id }}"
+                    {% if req.book.available_copies < 1 %}disabled{% endif %}
+                  >
+                    <i class="bi bi-check-circle"></i> Approve
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#rejectModal-{{ req.id }}"
+                  >
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
+                  <form
+                    method="POST"
+                    action="{{ url_for('librarian_requests.hold_request',
+                                       request_id=req.id) }}"
+                    class="d-inline"
+                  >
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}" />
+                    <button class="btn btn-sm btn-outline-info"
+                            title="Place on Hold">
+                      <i class="bi bi-pause"></i>
+                    </button>
+                  </form>
+                {% elif req.status == 'Rejected' %}
+                  <small class="text-danger">
+                    {{ req.rejection_reason|truncate(50) }}
+                  </small>
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+            </tr>
+
+            <!-- Approve Modal -->
+            {% if req.status == 'Pending' %}
+            <div class="modal fade" id="approveModal-{{ req.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form
+                    method="POST"
+                    action="{{ url_for('librarian_requests.approve_request',
+                                       request_id=req.id) }}"
+                  >
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}" />
+                    <div class="modal-header bg-success text-white">
+                      <h5 class="modal-title">
+                        <i class="bi bi-check-circle"></i> Approve Request
+                      </h5>
+                      <button type="button" class="btn-close btn-close-white"
+                              data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="mb-3">
+                        Approving request for
+                        <strong>{{ req.book.title }}</strong>
+                        by
+                        <strong>{{ req.student.full_name }}</strong>.
+                      </p>
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                          Issue Date (physical handover)
+                        </label>
+                        <input
+                          type="date"
+                          name="issue_date"
+                          class="form-control"
+                          value="{{ today.strftime('%Y-%m-%d') if today else '' }}"
+                          required
+                        />
+                        <small class="text-muted">
+                          Due date will be 14 days after this date.
+                        </small>
+                      </div>
+                      <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Student will receive WhatsApp and in-app notification.
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary"
+                              data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" name="submit" class="btn btn-success">
+                        <i class="bi bi-check"></i> Confirm Approval
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reject Modal -->
+            <div class="modal fade" id="rejectModal-{{ req.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form
+                    method="POST"
+                    action="{{ url_for('librarian_requests.reject_request',
+                                       request_id=req.id) }}"
+                  >
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}" />
+                    <div class="modal-header bg-danger text-white">
+                      <h5 class="modal-title">
+                        <i class="bi bi-x-circle"></i> Reject Request
+                      </h5>
+                      <button type="button" class="btn-close btn-close-white"
+                              data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="mb-3">
+                        Rejecting request for
+                        <strong>{{ req.book.title }}</strong>
+                        by
+                        <strong>{{ req.student.full_name }}</strong>.
+                      </p>
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                          Reason for Rejection <span class="text-danger">*</span>
+                        </label>
+                        <textarea
+                          name="rejection_reason"
+                          class="form-control"
+                          rows="3"
+                          required
+                          placeholder="e.g. Book reserved for exam. Try again next week."
+                        ></textarea>
+                      </div>
+                      <div class="alert alert-warning small mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Student can re-request the same book after 24 hours.
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary"
+                              data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" name="submit" class="btn btn-danger">
+                        <i class="bi bi-x"></i> Confirm Rejection
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    <p class="mb-0">
+      No <strong>{{ status_filter }}</strong> requests found.
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

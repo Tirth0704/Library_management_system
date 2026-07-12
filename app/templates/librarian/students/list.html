@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Students — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-people me-1"></i> Students
+    </h5>
+    <small class="text-muted">{{ students|length }} student(s) registered</small>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('librarian_students.student_list') }}">
+      <div class="input-group">
+        <span class="input-group-text bg-white">
+          <i class="bi bi-search"></i>
+        </span>
+        <input
+          type="text"
+          name="q"
+          class="form-control"
+          placeholder="Search by name, enrollment number, or email..."
+          value="{{ search or '' }}"
+        />
+        <button class="btn btn-dark" type="submit">Search</button>
+        {% if search %}
+          <a href="{{ url_for('librarian_students.student_list') }}"
+             class="btn btn-outline-secondary">Clear</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if students %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Student</th>
+            <th>Enrollment</th>
+            <th>Department</th>
+            <th>Semester</th>
+            <th class="text-center">Score</th>
+            <th class="text-center">Status</th>
+            <th>Joined</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in students %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ student.full_name }}</div>
+                <small class="text-muted">{{ student.email }}</small>
+              </td>
+              <td>
+                <code class="small">{{ student.enrollment_number }}</code>
+              </td>
+              <td><small>{{ student.department }}</small></td>
+              <td><small>{{ student.semester }}</small></td>
+              <td class="text-center">
+                <div class="d-inline-flex flex-column align-items-center">
+                  <strong class="{{ 'text-danger' if student.behaviour_score < 50
+                    else 'text-warning' if student.behaviour_score < 80
+                    else 'text-success' }}">
+                    {{ student.behaviour_score }}
+                  </strong>
+                  <div class="progress" style="width:50px; height:4px;">
+                    <div class="progress-bar
+                      {% if student.behaviour_score >= 80 %}bg-success
+                      {% elif student.behaviour_score >= 50 %}bg-warning
+                      {% else %}bg-danger{% endif %}"
+                      style="width:{{ student.behaviour_score }}%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                {% if student.account_status == 'Good' %}
+                  <span class="badge bg-success">{{ student.account_status }}</span>
+                {% elif student.account_status == 'Average' %}
+                  <span class="badge bg-warning text-dark">
+                    {{ student.account_status }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger">{{ student.account_status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <small>{{ student.joining_date.strftime('%d %b %Y') }}</small>
+              </td>
+              <td class="text-end">
+                <a
+                  href="{{ url_for('librarian_students.student_detail',
+                                   student_id=student.id) }}"
+                  class="btn btn-sm btn-outline-primary"
+                >
+                  <i class="bi bi-eye"></i> View
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-people fs-1 d-block mb-2"></i>
+    <p class="mb-0">
+      {% if search %}
+        No students found matching "{{ search }}".
+      {% else %}
+        No students registered yet.
+      {% endif %}
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

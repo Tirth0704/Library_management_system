@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Notifications — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i> Notifications
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-bell me-1"></i> Notifications
+        </h5>
+        <small class="text-muted">
+          {{ notifications|length }} total notification(s)
+        </small>
+      </div>
+      <a href="{{ url_for('student.dashboard') }}"
+         class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Dashboard
+      </a>
+    </div>
+
+    {% if notifications %}
+      <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+          {% for note in notifications %}
+            <div class="list-group-item d-flex gap-3
+              {{ 'bg-light' if not note.is_read else '' }}">
+
+              <!-- Icon -->
+              <div class="flex-shrink-0">
+                {% if note.notification_type == 'request_approved' %}
+                  <div class="rounded-circle bg-success bg-opacity-10 text-success
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-check-circle fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'request_rejected' %}
+                  <div class="rounded-circle bg-danger bg-opacity-10 text-danger
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-x-circle fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'due_reminder' %}
+                  <div class="rounded-circle bg-warning bg-opacity-10 text-warning
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-clock fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'overdue_notice' %}
+                  <div class="rounded-circle bg-danger bg-opacity-10 text-danger
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-exclamation-triangle fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'fine_paid' %}
+                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-credit-card fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'recommendation_approved' %}
+                  <div class="rounded-circle bg-success bg-opacity-10 text-success
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-lightbulb fs-5"></i>
+                  </div>
+                {% elif note.notification_type == 'recommendation_rejected' %}
+                  <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-lightbulb-off fs-5"></i>
+                  </div>
+                {% else %}
+                  <div class="rounded-circle bg-info bg-opacity-10 text-info
+                              d-flex align-items-center justify-content-center"
+                       style="width:44px; height:44px;">
+                    <i class="bi bi-info-circle fs-5"></i>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Content -->
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <h6 class="mb-1 fw-semibold">
+                    {{ note.title }}
+                    {% if not note.is_read %}
+                      <span class="badge bg-primary ms-1"
+                            style="font-size:.6rem;">NEW</span>
+                    {% endif %}
+                  </h6>
+                  <small class="text-muted text-nowrap ms-2">
+                    {{ note.created_at.strftime('%d %b, %H:%M') }}
+                  </small>
+                </div>
+                <p class="mb-0 small text-muted">{{ note.message }}</p>
+              </div>
+
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+          <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+          <p class="mb-0">You don't have any notifications yet.</p>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

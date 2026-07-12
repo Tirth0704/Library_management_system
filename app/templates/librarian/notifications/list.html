@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Notification Logs — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% set whatsapp_sent = whatsapp_logs|selectattr('status', 'equalto', 'sent')|list|length %}
+{% set whatsapp_failed = whatsapp_logs|selectattr('status', 'equalto', 'failed')|
+                          list|length %}
+{% set inapp_unread = in_app|rejectattr('is_read')|list|length %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-bell me-1"></i> Notification Logs
+    </h5>
+    <small class="text-muted">
+      Delivery logs for all system notifications
+    </small>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-envelope fs-3 text-primary"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ in_app|length }}</h4>
+        <small class="text-muted">In-App Notifications</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-envelope-open fs-3 text-warning"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ inapp_unread }}</h4>
+        <small class="text-muted">Unread by Students</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-whatsapp fs-3 text-success"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ whatsapp_sent }}</h4>
+        <small class="text-muted">WhatsApp Sent</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center
+      {% if whatsapp_failed > 0 %}border-danger border-2{% endif %}">
+      <div class="card-body py-3">
+        <i class="bi bi-x-circle fs-3
+          {{ 'text-danger' if whatsapp_failed > 0 else 'text-muted' }}"></i>
+        <h4 class="fw-bold mb-0 mt-1
+          {{ 'text-danger' if whatsapp_failed > 0 else '' }}">
+          {{ whatsapp_failed }}
+        </h4>
+        <small class="text-muted">WhatsApp Failed</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if tab == 'inapp' else '' }}"
+       href="{{ url_for('librarian_notifications.notification_list', tab='inapp') }}">
+      <i class="bi bi-app"></i> In-App ({{ in_app|length }})
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if tab == 'whatsapp' else '' }}"
+       href="{{ url_for('librarian_notifications.notification_list',
+                        tab='whatsapp') }}">
+      <i class="bi bi-whatsapp"></i> WhatsApp ({{ whatsapp_logs|length }})
+    </a>
+  </li>
+</ul>
+
+<!-- In-App Tab -->
+{% if tab == 'inapp' %}
+  {% if in_app %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Time</th>
+                <th>Student</th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Message</th>
+                <th class="text-center">Read?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for note in in_app %}
+                <tr class="{{ '' if note.is_read else 'table-info' }}">
+                  <td>
+                    <small>{{ note.created_at.strftime('%d %b') }}</small><br>
+                    <small class="text-muted">
+                      {{ note.created_at.strftime('%H:%M') }}
+                    </small>
+                  </td>
+                  <td>
+                    {% if note.student %}
+                      <a href="{{ url_for('librarian_students.student_detail',
+                                          student_id=note.student.id) }}"
+                         class="text-decoration-none small">
+                        <strong>{{ note.student.full_name }}</strong>
+                      </a>
+                    {% else %}
+                      <small class="text-muted">—</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <code class="small">
+                      {{ note.notification_type }}
+                    </code>
+                  </td>
+                  <td>
+                    <small class="fw-semibold">{{ note.title }}</small>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {{ note.message|truncate(80) }}
+                    </small>
+                  </td>
+                  <td class="text-center">
+                    {% if note.is_read %}
+                      <i class="bi bi-check-circle-fill text-success"></i>
+                    {% else %}
+                      <i class="bi bi-circle text-muted"></i>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+        <p class="mb-0">No in-app notifications yet.</p>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+
+<!-- WhatsApp Tab -->
+{% if tab == 'whatsapp' %}
+  {% if whatsapp_logs %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Time</th>
+                <th>Student</th>
+                <th>Event</th>
+                <th>To Number</th>
+                <th>Message Preview</th>
+                <th class="text-center">Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in whatsapp_logs %}
+                <tr class="{{ 'table-danger' if log.status == 'failed' else '' }}">
+                  <td>
+                    <small>{{ log.created_at.strftime('%d %b') }}</small><br>
+                    <small class="text-muted">
+                      {{ log.created_at.strftime('%H:%M') }}
+                    </small>
+                  </td>
+                  <td>
+                    {% if log.student %}
+                      <a href="{{ url_for('librarian_students.student_detail',
+                                          student_id=log.student.id) }}"
+                         class="text-decoration-none small">
+                        <strong>{{ log.student.full_name }}</strong>
+                      </a>
+                    {% else %}
+                      <small class="text-muted">—</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <code class="small">{{ log.event_type }}</code>
+                  </td>
+                  <td>
+                    <small>{{ log.to_number }}</small>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {{ log.message_body|truncate(60) }}
+                    </small>
+                  </td>
+                  <td class="text-center">
+                    {% if log.status == 'sent' %}
+                      <span class="badge bg-success">
+                        <i class="bi bi-check"></i> Sent
+                      </span>
+                    {% else %}
+                      <span class="badge bg-danger">
+                        <i class="bi bi-x"></i> Failed
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.twilio_sid %}
+                      <small class="text-muted" style="font-size:.7rem;">
+                        SID: {{ log.twilio_sid|truncate(15) }}
+                      </small>
+                    {% elif log.error_message %}
+                      <small class="text-danger" style="font-size:.75rem;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ log.error_message|truncate(40) }}
+                      </small>
+                    {% else %}
+                      <small class="text-muted">—</small>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-whatsapp fs-1 d-block mb-2"></i>
+        <p class="mb-0">No WhatsApp logs yet.</p>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% if whatsapp_failed > 0 and tab == 'whatsapp' %}
+  <div class="alert alert-warning mt-3 small">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>{{ whatsapp_failed }} WhatsApp message(s) failed.</strong>
+    Check Twilio credentials and account balance.
+    As per spec, failed messages are NOT retried.
+  </div>
+{% endif %}
+{% endblock %}

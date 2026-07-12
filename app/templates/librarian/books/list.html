@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Manage Books — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+{% include "librarian/_navbar_include.html" ignore missing %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-book me-1"></i> Manage Books
+    </h5>
+    <small class="text-muted">{{ books|length }} book(s) in inventory</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('librarian_categories.category_list') }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-tags"></i> Categories
+    </a>
+    <a href="{{ url_for('librarian_books.add_book') }}"
+       class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> Add Book
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('librarian_books.book_list') }}"
+          class="row g-2">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-white">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="Search by title or author..."
+            value="{{ query or '' }}"
+          />
+        </div>
+      </div>
+      <div class="col-md-4">
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}"
+              {% if request.args.get('category')|int == cat.id %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-dark">
+          <i class="bi bi-funnel"></i> Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Book Table -->
+{% if books %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Category</th>
+            <th class="text-end">Price</th>
+            <th class="text-end">Rent</th>
+            <th class="text-center">Available</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ book.title }}</div>
+                {% if book.publisher %}
+                  <small class="text-muted">{{ book.publisher }}</small>
+                {% endif %}
+              </td>
+              <td>{{ book.author }}</td>
+              <td>
+                <span class="badge bg-light text-dark border">
+                  {{ book.category.name if book.category else "—" }}
+                </span>
+              </td>
+              <td class="text-end">₹{{ "%.2f"|format(book.price) }}</td>
+              <td class="text-end text-primary fw-semibold">
+                ₹{{ "%.2f"|format(book.rent) }}
+              </td>
+              <td class="text-center">
+                <strong>{{ book.available_copies }}</strong>
+                <small class="text-muted">/ {{ book.total_copies }}</small>
+              </td>
+              <td class="text-center">
+                {% if book.status == "Available" %}
+                  <span class="badge bg-success">Available</span>
+                {% else %}
+                  <span class="badge bg-secondary">Unavailable</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a
+                    href="{{ url_for('librarian_books.edit_book', book_id=book.id) }}"
+                    class="btn btn-outline-primary"
+                    title="Edit"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form
+                    method="POST"
+                    action="{{ url_for('librarian_books.delete_book',
+                                       book_id=book.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Delete this book? This cannot be undone.');"
+                  >
+                    <input type="hidden" name="csrf_token"
+                           value="{{ csrf_token() }}" />
+                    <button class="btn btn-outline-danger" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    <p class="mb-2">No books found.</p>
+    <a href="{{ url_for('librarian_books.add_book') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> Add First Book
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

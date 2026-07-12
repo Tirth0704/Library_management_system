@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}My Books — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i>
+            {% if unread_count and unread_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle
+                           badge rounded-pill bg-danger" style="font-size:.6rem;">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-journal-bookmark me-1"></i> My Borrowed Books
+    </h5>
+    <small class="text-muted">
+      Currently issued: {{ issues|length }} book(s)
+    </small>
+  </div>
+  <a href="{{ url_for('requests.my_history') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-archive"></i> View History
+  </a>
+</div>
+
+{% if issues %}
+<div class="row g-3">
+  {% for issue in issues %}
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100
+        {% if issue.is_overdue %}border-start border-4 border-danger{% endif %}">
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 class="fw-bold mb-0">{{ issue.book.title }}</h6>
+              <small class="text-muted">by {{ issue.book.author }}</small>
+            </div>
+            {% if issue.is_overdue %}
+              <span class="badge bg-danger">
+                <i class="bi bi-exclamation-triangle"></i> Overdue
+              </span>
+            {% else %}
+              <span class="badge bg-success">Active</span>
+            {% endif %}
+          </div>
+
+          <hr class="my-2">
+
+          <div class="row g-2 small">
+            <div class="col-6">
+              <span class="text-muted">Issued On</span><br>
+              <strong>{{ issue.issue_date.strftime('%d %b %Y') }}</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Due Date</span><br>
+              <strong class="{{ 'text-danger' if issue.is_overdue else '' }}">
+                {{ issue.due_date.strftime('%d %b %Y') }}
+              </strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Rent</span><br>
+              <strong>₹{{ "%.2f"|format(issue.book.rent) }}</strong>
+            </div>
+            <div class="col-6">
+              <span class="text-muted">Fine / Day</span><br>
+              <strong class="text-danger">
+                ₹{{ "%.2f"|format(issue.book.fine_per_day) }}
+              </strong>
+            </div>
+          </div>
+
+          {% if issue.is_overdue %}
+            <div class="alert alert-danger py-2 mt-3 mb-0 small">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Overdue by <strong>{{ issue.overdue_days }} day(s)</strong>.
+              Estimated late fine:
+              <strong>
+                ₹{{ "%.2f"|format(issue.book.fine_per_day * issue.overdue_days) }}
+              </strong>
+            </div>
+          {% else %}
+            {% set days_left = (issue.due_date - today).days if today else 0 %}
+            {% if days_left <= 3 %}
+              <div class="alert alert-warning py-2 mt-3 mb-0 small">
+                <i class="bi bi-clock-fill"></i>
+                Due in <strong>{{ days_left }} day(s)</strong>.
+                Please return on time.
+              </div>
+            {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+    <p class="mb-2">You don't have any books borrowed right now.</p>
+    <a href="{{ url_for('books.book_list') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-search"></i> Browse Books
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Inject today's date for template use
+  window.today = new Date();
+</script>
+{% endblock %}

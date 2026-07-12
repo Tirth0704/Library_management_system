@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}My Fines — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i>
+            {% if unread_count and unread_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle
+                           badge rounded-pill bg-danger" style="font-size:.6rem;">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% set unpaid_fines = fines|selectattr('status', 'equalto', 'Unpaid')|list %}
+{% set paid_fines = fines|selectattr('status', 'equalto', 'Paid')|list %}
+{% set total_unpaid = unpaid_fines|sum(attribute='amount') %}
+{% set total_paid = paid_fines|sum(attribute='amount') %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-receipt me-1"></i> My Fines
+    </h5>
+    <small class="text-muted">
+      Total fines: {{ fines|length }}
+    </small>
+  </div>
+  <a href="{{ url_for('payments.receipts') }}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-file-earmark-pdf"></i> View Receipts
+  </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center
+      {% if total_unpaid > 0 %}border-danger border-2{% endif %}">
+      <div class="card-body py-3">
+        <i class="bi bi-exclamation-circle fs-3
+          {{ 'text-danger' if total_unpaid > 0 else 'text-success' }}"></i>
+        <h4 class="fw-bold mb-0 mt-1
+          {{ 'text-danger' if total_unpaid > 0 else '' }}">
+          ₹{{ "%.2f"|format(total_unpaid|float) }}
+        </h4>
+        <small class="text-muted">Unpaid Total</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-check-circle text-success fs-3"></i>
+        <h4 class="fw-bold mb-0 mt-1">
+          ₹{{ "%.2f"|format(total_paid|float) }}
+        </h4>
+        <small class="text-muted">Total Paid</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-hourglass-split text-warning fs-3"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ unpaid_fines|length }}</h4>
+        <small class="text-muted">Pending Payments</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unpaid Fines -->
+{% if unpaid_fines %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-danger bg-opacity-10 border-0">
+    <h6 class="fw-bold text-danger mb-0">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>
+      Unpaid Fines ({{ unpaid_fines|length }})
+    </h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Date</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fine in unpaid_fines %}
+            <tr>
+              <td>
+                {% if fine.fine_type == 'rent' %}
+                  <span class="badge bg-primary">Rent</span>
+                {% elif fine.fine_type == 'late' %}
+                  <span class="badge bg-warning text-dark">Late Fine</span>
+                {% elif fine.fine_type == 'damage' %}
+                  <span class="badge bg-info text-dark">Damage</span>
+                {% elif fine.fine_type == 'lost' %}
+                  <span class="badge bg-danger">Lost Book</span>
+                {% endif %}
+              </td>
+              <td>
+                <small>{{ fine.description or "—" }}</small>
+              </td>
+              <td>
+                <small>{{ fine.created_at.strftime('%d %b %Y') }}</small>
+              </td>
+              <td class="text-end fw-bold text-danger">
+                ₹{{ "%.2f"|format(fine.amount) }}
+              </td>
+              <td class="text-end">
+                <a
+                  href="{{ url_for('payments.pay_fine', fine_id=fine.id) }}"
+                  class="btn btn-sm btn-danger"
+                >
+                  <i class="bi bi-credit-card"></i> Pay Now
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <th colspan="3" class="text-end">Total Unpaid:</th>
+            <th class="text-end text-danger">
+              ₹{{ "%.2f"|format(total_unpaid|float) }}
+            </th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Paid Fines -->
+{% if paid_fines %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-success bg-opacity-10 border-0">
+    <h6 class="fw-bold text-success mb-0">
+      <i class="bi bi-check-circle-fill me-1"></i>
+      Payment History ({{ paid_fines|length }})
+    </h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Paid On</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fine in paid_fines %}
+            <tr>
+              <td>
+                {% if fine.fine_type == 'rent' %}
+                  <span class="badge bg-primary">Rent</span>
+                {% elif fine.fine_type == 'late' %}
+                  <span class="badge bg-warning text-dark">Late Fine</span>
+                {% elif fine.fine_type == 'damage' %}
+                  <span class="badge bg-info text-dark">Damage</span>
+                {% elif fine.fine_type == 'lost' %}
+                  <span class="badge bg-danger">Lost Book</span>
+                {% endif %}
+              </td>
+              <td><small>{{ fine.description or "—" }}</small></td>
+              <td>
+                <small>
+                  {{ fine.paid_at.strftime('%d %b %Y') if fine.paid_at else "—" }}
+                </small>
+              </td>
+              <td class="text-end">₹{{ "%.2f"|format(fine.amount) }}</td>
+              <td class="text-end">
+                {% if fine.payment %}
+                  <a
+                    href="{{ url_for('payments.download_receipt',
+                                     payment_id=fine.payment.id) }}"
+                    class="btn btn-sm btn-outline-secondary"
+                  >
+                    <i class="bi bi-download"></i>
+                  </a>
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if not fines %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+    <p class="mb-0">You have no fines. Keep it up!</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

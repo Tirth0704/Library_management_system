@@ -1,0 +1,132 @@
+/* ==========================================================================
+   LibraryHub 2.0 — Librarian Panel Styles
+   Extra styles specific to librarian-facing pages
+   ========================================================================== */
+
+/* ─── Librarian Navbar ───────────────────────────────────────────────────── */
+.navbar-dark.bg-dark {
+  background-color: #1a202c !important;
+  border-bottom: 2px solid #2d3748;
+}
+
+.navbar-dark.bg-dark .nav-link {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.navbar-dark.bg-dark .nav-link:hover {
+  color: #ffffff;
+}
+
+.navbar-dark.bg-dark .nav-link.active {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+/* ─── Nav Pills (status tabs) ────────────────────────────────────────────── */
+.nav-pills .nav-link {
+  color: #4a5568;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  margin-right: 6px;
+  transition: all 0.15s ease;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e1;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #1a202c;
+  color: #ffffff;
+  border-color: #1a202c;
+}
+
+/* ─── Dashboard Stats ────────────────────────────────────────────────────── */
+.card.text-center i.fs-3 {
+  opacity: 0.9;
+}
+
+.card.border-danger.border-2 {
+  background-color: #fef2f2;
+}
+
+.card.border-warning.border-2 {
+  background-color: #fef3c7;
+}
+
+/* ─── Tables with Actions ────────────────────────────────────────────────── */
+.table .btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+}
+
+.table tr.table-danger {
+  --bs-table-bg: #fef2f2;
+}
+
+.table tr.table-info {
+  --bs-table-bg: #eff6ff;
+}
+
+/* ─── Recent Activity Table ─────────────────────────────────────────────── */
+.table td code.small {
+  font-size: 0.75rem;
+}
+
+/* ─── Modal Icons ────────────────────────────────────────────────────────── */
+.modal-header i.bi {
+  margin-right: 0.5rem;
+}
+
+/* ─── Recommendations Card Grid ─────────────────────────────────────────── */
+.card .alert-light {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* ─── Sticky Table Headers ──────────────────────────────────────────────── */
+.table thead.sticky-top {
+  z-index: 5;
+  background-color: #edf2f7 !important;
+}
+
+/* ─── Student Detail Sections ───────────────────────────────────────────── */
+.table-borderless.table-sm td {
+  padding: 0.35rem 0.5rem;
+}
+
+/* ─── Return Process Form ───────────────────────────────────────────────── */
+#damageFieldWrapper {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Filter Bar ─────────────────────────────────────────────────────────── */
+.btn-group .btn.active {
+  z-index: 2;
+}
+
+/* ─── Payment Status Badges ─────────────────────────────────────────────── */
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-warning,
+.badge.bg-danger,
+.badge.bg-secondary {
+  font-size: 0.72rem;
+}
+
+/* ─── WhatsApp Log Failed Rows ──────────────────────────────────────────── */
+tr.table-danger td small.text-danger {
+  font-weight: 500;
+}

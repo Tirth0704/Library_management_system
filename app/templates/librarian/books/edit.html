@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Edit Book — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_books.book_list') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Books
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+
+    <div class="mb-3">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-pencil-square me-1"></i> Edit Book
+      </h5>
+      <small class="text-muted">Update the book details</small>
+    </div>
+
+    <!-- Current Stats Box -->
+    <div class="card border-0 bg-light mb-3">
+      <div class="card-body py-2">
+        <div class="row text-center small">
+          <div class="col-4">
+            <small class="text-muted d-block">Currently Available</small>
+            <strong>{{ book.available_copies }}</strong>
+          </div>
+          <div class="col-4">
+            <small class="text-muted d-block">Issued Out</small>
+            <strong>{{ book.issued_copies }}</strong>
+          </div>
+          <div class="col-4">
+            <small class="text-muted d-block">Added On</small>
+            <strong>{{ book.added_date.strftime('%d %b %Y') }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+
+        <form
+          method="POST"
+          action="{{ url_for('librarian_books.edit_book', book_id=book.id) }}"
+          novalidate
+        >
+          {{ form.hidden_tag() }}
+
+          <div class="row g-3">
+
+            <div class="col-12">
+              {{ form.title.label(class="form-label fw-semibold") }}
+              {{ form.title(
+                  class="form-control" + (" is-invalid" if form.title.errors else "")
+              ) }}
+              {% for e in form.title.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.author.label(class="form-label fw-semibold") }}
+              {{ form.author(
+                  class="form-control" + (" is-invalid" if form.author.errors else "")
+              ) }}
+              {% for e in form.author.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.publisher.label(class="form-label fw-semibold") }}
+              {{ form.publisher(class="form-control") }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.price.label(class="form-label fw-semibold") }}
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                {{ form.price(
+                    class="form-control" + (" is-invalid" if form.price.errors else ""),
+                    step="0.01"
+                ) }}
+                {% for e in form.price.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+              <small class="text-muted">
+                New rent: ₹{{ "%.2f"|format(book.rent) }} (auto-updated)
+              </small>
+            </div>
+
+            <div class="col-md-6">
+              {{ form.total_copies.label(class="form-label fw-semibold") }}
+              {{ form.total_copies(
+                  class="form-control" + (" is-invalid" if form.total_copies.errors else "")
+              ) }}
+              {% for e in form.total_copies.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+              <small class="text-muted">
+                Increasing this adds to available copies
+              </small>
+            </div>
+
+            <div class="col-12">
+              {{ form.category_id.label(class="form-label fw-semibold") }}
+              {{ form.category_id(
+                  class="form-select" + (" is-invalid" if form.category_id.errors else "")
+              ) }}
+              {% for e in form.category_id.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-2">
+              {{ form.submit(class="btn btn-primary") }}
+              <a href="{{ url_for('librarian_books.book_list') }}"
+                 class="btn btn-outline-secondary">
+                Cancel
+              </a>
+            </div>
+
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

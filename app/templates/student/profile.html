@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Profile — LibraryHub{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-house"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-person-circle me-1"></i>
+        {% if edit_mode %}Edit Profile{% else %}My Profile{% endif %}
+      </h5>
+      {% if not edit_mode %}
+        <a href="{{ url_for('student.edit_profile') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+
+        {% if edit_mode and form %}
+          <!-- Edit Form -->
+          <form method="POST" action="{{ url_for('student.edit_profile') }}" novalidate>
+            {{ form.hidden_tag() }}
+            <div class="row g-3">
+
+              <div class="col-12">
+                {{ form.full_name.label(class="form-label fw-semibold") }}
+                {{ form.full_name(
+                    class="form-control" + (" is-invalid" if form.full_name.errors else "")
+                ) }}
+                {% for e in form.full_name.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-12">
+                {{ form.phone_number.label(class="form-label fw-semibold") }}
+                {{ form.phone_number(
+                    class="form-control" + (" is-invalid" if form.phone_number.errors else "")
+                ) }}
+                {% for e in form.phone_number.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6">
+                {{ form.department.label(class="form-label fw-semibold") }}
+                {{ form.department(
+                    class="form-select" + (" is-invalid" if form.department.errors else "")
+                ) }}
+                {% for e in form.department.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-md-6">
+                {{ form.semester.label(class="form-label fw-semibold") }}
+                {{ form.semester(
+                    class="form-select" + (" is-invalid" if form.semester.errors else "")
+                ) }}
+                {% for e in form.semester.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="col-12 d-flex gap-2 mt-2">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('student.profile') }}" class="btn btn-outline-secondary">
+                  Cancel
+                </a>
+              </div>
+
+            </div>
+          </form>
+
+        {% else %}
+          <!-- View Mode -->
+          <table class="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td class="text-muted fw-semibold" style="width:40%">Full Name</td>
+                <td>{{ student.full_name }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Enrollment No.</td>
+                <td>{{ student.enrollment_number }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Email</td>
+                <td>{{ student.email }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Phone</td>
+                <td>{{ student.phone_number }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Department</td>
+                <td>{{ student.department }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Semester</td>
+                <td>{{ student.semester }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Joining Date</td>
+                <td>{{ student.joining_date.strftime('%d %b %Y') }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Behaviour Score</td>
+                <td>
+                  <strong>{{ student.behaviour_score }}</strong> / 100
+                  <div class="progress mt-1" style="height:6px; max-width:150px;">
+                    <div class="progress-bar
+                      {% if student.behaviour_score >= 80 %}bg-success
+                      {% elif student.behaviour_score >= 50 %}bg-warning
+                      {% else %}bg-danger{% endif %}"
+                      style="width:{{ student.behaviour_score }}%">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold">Account Status</td>
+                <td>
+                  <span class="badge
+                    {% if student.account_status == 'Good' %}bg-success
+                    {% elif student.account_status == 'Average' %}bg-warning text-dark
+                    {% else %}bg-danger{% endif %}">
+                    {{ student.account_status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i>
+            {% if unread_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle
+                           badge rounded-pill bg-danger" style="font-size:.6rem;">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle"></i> {{ student.full_name.split()[0] }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('student.profile') }}">
+              <i class="bi bi-person me-1"></i> Profile</a>
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('requests.my_requests') }}">
+              <i class="bi bi-clock-history me-1"></i> My Requests</a>
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('requests.my_history') }}">
+              <i class="bi bi-archive me-1"></i> History</a>
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('payments.receipts') }}">
+              <i class="bi bi-file-earmark-pdf me-1"></i> Receipts</a>
+            </li>
+            <li><a class="dropdown-item"
+                   href="{{ url_for('recommendations.recommendations') }}">
+              <i class="bi bi-lightbulb me-1"></i> Recommend</a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger"
+                   href="{{ url_for('auth.logout') }}">
+              <i class="bi bi-box-arrow-right me-1"></i> Logout</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h5 class="mb-0 fw-bold">Welcome back, {{ student.full_name }}!</h5>
+    <small class="text-muted">{{ student.department }} · {{ student.semester }}</small>
+  </div>
+  <div>
+    {% if student.account_status == "Good" %}
+      <span class="badge bg-success fs-6">
+        <i class="bi bi-star-fill me-1"></i>{{ student.account_status }}
+      </span>
+    {% elif student.account_status == "Average" %}
+      <span class="badge bg-warning text-dark fs-6">
+        <i class="bi bi-dash-circle me-1"></i>{{ student.account_status }}
+      </span>
+    {% else %}
+      <span class="badge bg-danger fs-6">
+        <i class="bi bi-exclamation-triangle me-1"></i>{{ student.account_status }}
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+
+  <!-- Active Books -->
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body py-3">
+        <i class="bi bi-book fs-3 text-primary"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ active_issues | length }}</h4>
+        <small class="text-muted">Books Borrowed</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Requests -->
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body py-3">
+        <i class="bi bi-clock fs-3 text-warning"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ pending_requests }}</h4>
+        <small class="text-muted">Pending Requests</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unpaid Fines -->
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center h-100
+      {% if total_unpaid > 0 %}border-danger{% endif %}">
+      <div class="card-body py-3">
+        <i class="bi bi-exclamation-circle fs-3
+          {{ 'text-danger' if total_unpaid > 0 else 'text-success' }}"></i>
+        <h4 class="fw-bold mb-0 mt-1 {{ 'text-danger' if total_unpaid > 0 else '' }}">
+          ₹{{ "%.2f"|format(total_unpaid|float) }}
+        </h4>
+        <small class="text-muted">Unpaid Fines</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Behaviour Score -->
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center h-100">
+      <div class="card-body py-3">
+        <i class="bi bi-graph-up fs-3 text-info"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ student.behaviour_score }}/100</h4>
+        <small class="text-muted">Behaviour Score</small>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Active Issues Warning -->
+{% if unpaid_fines %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <div>
+    You have <strong>{{ unpaid_fines | length }} unpaid fine(s)</strong>
+    totalling <strong>₹{{ "%.2f"|format(total_unpaid|float) }}</strong>.
+    New requests will be placed on hold until dues are cleared.
+    <a href="{{ url_for('payments.my_fines') }}" class="alert-link ms-1">Pay now →</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- Currently Borrowed -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold border-0 pt-3">
+        <i class="bi bi-journal-bookmark me-1 text-primary"></i> Currently Borrowed
+      </div>
+      <div class="card-body p-0">
+        {% if active_issues %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Book</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for issue in active_issues %}
+                  {% set days_left = (issue.due_date - today).days if today is defined
+                     else 0 %}
+                  <tr>
+                    <td>
+                      <span class="fw-semibold">{{ issue.book.title }}</span><br>
+                      <small class="text-muted">{{ issue.book.author }}</small>
+                    </td>
+                    <td>
+                      {{ issue.due_date.strftime('%d %b %Y') }}
+                      {% if issue.is_overdue %}
+                        <br><span class="badge bg-danger">Overdue</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if issue.is_overdue %}
+                        <span class="badge bg-danger">
+                          {{ issue.overdue_days }}d overdue
+                        </span>
+                      {% else %}
+                        <span class="badge bg-success">On Track</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+            No books currently borrowed.
+            <a href="{{ url_for('books.book_list') }}">Browse books →</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Newly Added Books -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold border-0 pt-3">
+        <i class="bi bi-stars me-1 text-warning"></i> Newly Added Books
+      </div>
+      <div class="card-body p-0">
+        {% if new_books %}
+          <ul class="list-group list-group-flush">
+            {% for book in new_books %}
+              <li class="list-group-item d-flex justify-content-between align-items-start py-2">
+                <div>
+                  <div class="fw-semibold small">{{ book.title }}</div>
+                  <small class="text-muted">{{ book.author }}</small>
+                </div>
+                <span class="badge {{ 'bg-success' if book.available_copies > 0 else 'bg-secondary' }} rounded-pill">
+                  {{ 'Available' if book.available_copies > 0 else 'Unavailable' }}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="p-4 text-center text-muted">No books added recently.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Inject today's date for Jinja2 template fallback
+const today = new Date();
+</script>
+{% endblock %}

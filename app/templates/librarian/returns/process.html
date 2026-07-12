@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}
+{% if issue %}Return: {{ book.title }}{% else %}Process Returns{% endif %} — LibraryHub
+{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      {% if issue %}
+        <a href="{{ url_for('librarian_returns.return_list') }}"
+           class="btn btn-outline-light btn-sm">
+          <i class="bi bi-arrow-left"></i> Back to Returns
+        </a>
+      {% else %}
+        <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+           class="btn btn-outline-light btn-sm">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      {% endif %}
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+{% if not issue %}
+{# ==================== LIST VIEW ==================== #}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-arrow-return-left me-1"></i> Process Returns
+    </h5>
+    <small class="text-muted">
+      Select a book to process its return
+    </small>
+  </div>
+</div>
+
+{% if issues %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Student</th>
+            <th>Book</th>
+            <th>Due Date</th>
+            <th>Days Overdue</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for iss in issues %}
+            {% set is_overdue = iss.due_date < today %}
+            {% set overdue_days = (today - iss.due_date).days if is_overdue else 0 %}
+            <tr class="{{ 'table-danger' if is_overdue else '' }}">
+              <td>
+                <strong>{{ iss.student.full_name }}</strong><br>
+                <small class="text-muted">
+                  {{ iss.student.enrollment_number }}
+                </small>
+              </td>
+              <td>
+                <div class="fw-semibold">{{ iss.book.title }}</div>
+                <small class="text-muted">by {{ iss.book.author }}</small>
+              </td>
+              <td>{{ iss.due_date.strftime('%d %b %Y') }}</td>
+              <td>
+                {% if is_overdue %}
+                  <span class="badge bg-danger">{{ overdue_days }} day(s)</span>
+                {% else %}
+                  <span class="badge bg-success">On time</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a
+                  href="{{ url_for('librarian_returns.return_detail',
+                                   issue_id=iss.id) }}"
+                  class="btn btn-sm btn-primary"
+                >
+                  <i class="bi bi-arrow-right"></i> Process
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+    <p class="mb-0">No active issues to process.</p>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+{# ==================== DETAIL / PROCESS VIEW ==================== #}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+
+    <div class="mb-3">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-arrow-return-left me-1"></i> Process Return
+      </h5>
+      <small class="text-muted">Complete the book return transaction</small>
+    </div>
+
+    <!-- Issue Summary -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <small class="text-muted d-block">Book</small>
+            <strong>{{ book.title }}</strong>
+            <br>
+            <small class="text-muted">by {{ book.author }}</small>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Student</small>
+            <strong>{{ student.full_name }}</strong>
+            <br>
+            <small class="text-muted">
+              {{ student.enrollment_number }} · Score: {{ student.behaviour_score }}
+            </small>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Issued On</small>
+            <strong>{{ issue.issue_date.strftime('%d %b %Y') }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Due Date</small>
+            <strong>{{ issue.due_date.strftime('%d %b %Y') }}</strong>
+          </div>
+          <div class="col-md-4">
+            <small class="text-muted d-block">Return Status</small>
+            {% if is_early %}
+              <span class="badge bg-info">Early Return</span>
+            {% elif overdue_days > 0 %}
+              <span class="badge bg-danger">
+                {{ overdue_days }} day(s) overdue
+              </span>
+            {% else %}
+              <span class="badge bg-success">On Time</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fine Calculator Preview -->
+    <div class="card border-0 bg-light mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-2 small">
+          <i class="bi bi-calculator me-1"></i> Charge Preview
+        </h6>
+        <div class="row g-2 small">
+          <div class="col-6">Base Rent (10%):</div>
+          <div class="col-6 text-end">
+            <strong>₹{{ "%.2f"|format(book.rent) }}</strong>
+          </div>
+
+          {% if overdue_days > 0 %}
+            <div class="col-6 text-danger">
+              Late Fine ({{ overdue_days }} × ₹{{ "%.2f"|format(book.fine_per_day) }}):
+            </div>
+            <div class="col-6 text-end text-danger">
+              <strong>
+                ₹{{ "%.2f"|format(book.fine_per_day * overdue_days) }}
+              </strong>
+            </div>
+          {% endif %}
+
+          <div class="col-6 text-muted small">
+            <em>Damage fine (if any) will be added below.</em>
+          </div>
+          <div class="col-6 text-end text-muted small">
+            <em>Variable</em>
+          </div>
+
+          <div class="col-6 text-muted small">
+            <em>If Lost: Full price = ₹{{ "%.2f"|format(book.price) }}</em>
+          </div>
+          <div class="col-6 text-end text-muted small">
+            <em>Overrides all</em>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return Form -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form
+          method="POST"
+          action="{{ url_for('librarian_returns.complete_return',
+                             issue_id=issue.id) }}"
+          novalidate
+          id="returnForm"
+        >
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.condition.label(class="form-label fw-semibold") }}
+            {{ form.condition(
+                class="form-select" + (" is-invalid" if form.condition.errors else ""),
+                id="conditionSelect",
+                onchange="toggleDamageField()"
+            ) }}
+            {% for e in form.condition.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3" id="damageFieldWrapper" style="display:none;">
+            {{ form.damage_fine.label(class="form-label fw-semibold") }}
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              {{ form.damage_fine(
+                  class="form-control" + (" is-invalid" if form.damage_fine.errors else ""),
+                  step="0.01",
+                  placeholder="Enter damage fine amount"
+              ) }}
+              {% for e in form.damage_fine.errors %}
+                <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+            <small class="text-muted">
+              Behaviour score: -20 for damage, -5 for damage fine applied
+            </small>
+          </div>
+
+          <div class="mb-3">
+            {{ form.librarian_notes.label(class="form-label fw-semibold") }}
+            {{ form.librarian_notes(
+                class="form-control",
+                rows=2,
+                placeholder="Any notes about condition or return..."
+            ) }}
+          </div>
+
+          <div class="alert alert-warning small">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>This action cannot be undone.</strong>
+            Fines will be created and student will be notified.
+          </div>
+
+          <div class="d-flex gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('librarian_returns.return_list') }}"
+               class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggleDamageField() {
+    const sel = document.getElementById("conditionSelect");
+    const wrapper = document.getElementById("damageFieldWrapper");
+    if (sel.value === "Damaged") {
+      wrapper.style.display = "block";
+    } else {
+      wrapper.style.display = "none";
+    }
+  }
+  // Run on load in case of validation error re-render
+  document.addEventListener("DOMContentLoaded", toggleDamageField);
+</script>
+
+{% endif %}
+{% endblock %}

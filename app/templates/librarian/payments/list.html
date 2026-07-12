@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Payments — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% set total_completed = payments|selectattr('status', 'equalto', 'Completed')|
+                          sum(attribute='amount') %}
+{% set count_online = payments|selectattr('payment_method', 'equalto', 'razorpay')|
+                       selectattr('status', 'equalto', 'Completed')|list|length %}
+{% set count_cash = payments|selectattr('payment_method', 'equalto', 'cash')|
+                     selectattr('status', 'equalto', 'Completed')|list|length %}
+{% set count_pending = payments|selectattr('status', 'equalto', 'Pending')|list|length %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-cash-coin me-1"></i> Payments
+    </h5>
+    <small class="text-muted">{{ payments|length }} payment record(s)</small>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-cash-stack fs-3 text-success"></i>
+        <h4 class="fw-bold mb-0 mt-1">
+          ₹{{ "%.0f"|format(total_completed|float) }}
+        </h4>
+        <small class="text-muted">Total Collected</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-credit-card fs-3 text-primary"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ count_online }}</h4>
+        <small class="text-muted">Online Payments</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-cash fs-3 text-info"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ count_cash }}</h4>
+        <small class="text-muted">Cash Payments</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center">
+      <div class="card-body py-3">
+        <i class="bi bi-hourglass fs-3 text-warning"></i>
+        <h4 class="fw-bold mb-0 mt-1">{{ count_pending }}</h4>
+        <small class="text-muted">Pending</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('librarian_payments.payment_list') }}"
+          class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>
+            All Statuses
+          </option>
+          <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>
+            Completed
+          </option>
+          <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>
+            Pending
+          </option>
+          <option value="Failed" {% if status_filter == 'Failed' %}selected{% endif %}>
+            Failed
+          </option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Payment Method</label>
+        <select name="method" class="form-select">
+          <option value="all" {% if method_filter == 'all' %}selected{% endif %}>
+            All Methods
+          </option>
+          <option value="razorpay" {% if method_filter == 'razorpay' %}selected{% endif %}>
+            Razorpay (Online)
+          </option>
+          <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>
+            Cash (Offline)
+          </option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-dark">
+          <i class="bi bi-funnel"></i> Filter
+        </button>
+      </div>
+      <div class="col-md-2 d-grid">
+        <a href="{{ url_for('librarian_payments.payment_list') }}"
+           class="btn btn-outline-secondary">
+          Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if payments %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Receipt No.</th>
+            <th>Student</th>
+            <th>Fine</th>
+            <th>Date</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th class="text-end">Amount</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+            <tr>
+              <td>
+                <code class="small">RCP-{{ "%06d"|format(payment.id) }}</code>
+                {% if payment.razorpay_payment_id %}
+                  <br>
+                  <small class="text-muted" style="font-size:.7rem;">
+                    {{ payment.razorpay_payment_id|truncate(20) }}
+                  </small>
+                {% endif %}
+              </td>
+              <td>
+                {% if payment.student_id %}
+                  <a
+                    href="{{ url_for('librarian_students.student_detail',
+                                     student_id=payment.student_id) }}"
+                    class="text-decoration-none"
+                  >
+                    <strong>
+                      {{ payment.student.full_name if payment.student else '—' }}
+                    </strong>
+                  </a>
+                  {% if payment.student %}
+                    <br>
+                    <small class="text-muted">
+                      {{ payment.student.enrollment_number }}
+                    </small>
+                  {% endif %}
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if payment.fine %}
+                  {% if payment.fine.fine_type == 'rent' %}
+                    <span class="badge bg-primary">Rent</span>
+                  {% elif payment.fine.fine_type == 'late' %}
+                    <span class="badge bg-warning text-dark">Late</span>
+                  {% elif payment.fine.fine_type == 'damage' %}
+                    <span class="badge bg-info text-dark">Damage</span>
+                  {% elif payment.fine.fine_type == 'lost' %}
+                    <span class="badge bg-danger">Lost</span>
+                  {% endif %}
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+              <td>
+                <small>
+                  {{ payment.completed_at.strftime('%d %b %Y')
+                     if payment.completed_at else payment.created_at.strftime('%d %b %Y') }}
+                </small>
+                <br>
+                <small class="text-muted">
+                  {{ payment.completed_at.strftime('%H:%M')
+                     if payment.completed_at else payment.created_at.strftime('%H:%M') }}
+                </small>
+              </td>
+              <td>
+                {% if payment.payment_method == 'razorpay' %}
+                  <span class="badge bg-primary">
+                    <i class="bi bi-credit-card"></i> Online
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">
+                    <i class="bi bi-cash"></i> Cash
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if payment.status == 'Completed' %}
+                  <span class="badge bg-success">
+                    <i class="bi bi-check"></i> Completed
+                  </span>
+                {% elif payment.status == 'Pending' %}
+                  <span class="badge bg-warning text-dark">
+                    <i class="bi bi-clock"></i> Pending
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger">
+                    <i class="bi bi-x"></i> Failed
+                  </span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold">
+                ₹{{ "%.2f"|format(payment.amount) }}
+              </td>
+              <td class="text-end">
+                {% if payment.receipt_path %}
+                  <a
+                    href="{{ url_for('static',
+                                     filename=payment.receipt_path) }}"
+                    class="btn btn-sm btn-outline-primary"
+                    target="_blank"
+                    title="Download Receipt"
+                  >
+                    <i class="bi bi-file-earmark-pdf"></i>
+                  </a>
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Unpaid Fines with Cash Payment Action -->
+{% set unpaid_fines_query = payments|selectattr('status', 'equalto', 'Pending')|list %}
+
+<!-- Separate section: All unpaid fines (cash payment option) -->
+<div class="mt-4">
+  <h6 class="fw-bold mb-2">
+    <i class="bi bi-hand-thumbs-up me-1"></i>
+    Record Cash Payment
+  </h6>
+  <p class="text-muted small mb-2">
+    Students may pay fines in cash at the library desk. Look up their fine below.
+    <br>
+    Cash payments are recorded via the
+    <a href="{{ url_for('librarian_students.student_list') }}">student profile</a>
+    or on the student's fine page directly by librarian.
+  </p>
+</div>
+
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-cash-coin fs-1 d-block mb-2"></i>
+    <p class="mb-0">
+      No payment records found for the selected filters.
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

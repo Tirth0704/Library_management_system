@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name }} — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_students.student_list') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-arrow-left"></i> All Students
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-0">{{ student.full_name }}</h4>
+    <small class="text-muted">
+      {{ student.enrollment_number }} · {{ student.department }} ·
+      {{ student.semester }}
+    </small>
+  </div>
+  <div>
+    {% if student.account_status == 'Good' %}
+      <span class="badge bg-success fs-6">
+        <i class="bi bi-star-fill"></i> {{ student.account_status }}
+      </span>
+    {% elif student.account_status == 'Average' %}
+      <span class="badge bg-warning text-dark fs-6">
+        <i class="bi bi-dash-circle"></i> {{ student.account_status }}
+      </span>
+    {% else %}
+      <span class="badge bg-danger fs-6">
+        <i class="bi bi-exclamation-triangle"></i> {{ student.account_status }}
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Profile Card -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-person-badge me-1"></i> Profile
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless table-sm mb-0">
+          <tr>
+            <td class="text-muted small">Email</td>
+            <td class="small">{{ student.email }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted small">Phone</td>
+            <td class="small">{{ student.phone_number }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted small">Joined</td>
+            <td class="small">
+              {{ student.joining_date.strftime('%d %b %Y') }}
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted small">Score</td>
+            <td>
+              <strong>{{ student.behaviour_score }}</strong> / 100
+              <div class="progress mt-1" style="height:5px;">
+                <div class="progress-bar
+                  {% if student.behaviour_score >= 80 %}bg-success
+                  {% elif student.behaviour_score >= 50 %}bg-warning
+                  {% else %}bg-danger{% endif %}"
+                  style="width:{{ student.behaviour_score }}%"></div>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Manual Score Adjust (only < 30) -->
+        {% if student.behaviour_score < 30 %}
+          <hr>
+          <h6 class="fw-semibold small text-danger">
+            <i class="bi bi-tools"></i> Manual Score Adjustment
+          </h6>
+          <p class="small text-muted mb-2">
+            Score is below 30. You may manually increase it.
+          </p>
+          <form
+            method="POST"
+            action="{{ url_for('librarian_students.adjust_score',
+                               student_id=student.id) }}"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="mb-2">
+              <label class="form-label small">Score Change (+/-)</label>
+              <input type="number" name="score_change" class="form-control form-control-sm"
+                     required placeholder="e.g. 10" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Reason</label>
+              <input type="text" name="reason" class="form-control form-control-sm"
+                     required placeholder="Reason for adjustment" />
+            </div>
+            <button type="submit" class="btn btn-danger btn-sm w-100">
+              <i class="bi bi-check"></i> Apply Adjustment
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Issues -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-journal-bookmark me-1"></i>
+        Active Issues ({{ active_issues|length }})
+      </div>
+      <div class="card-body p-0">
+        {% if active_issues %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Book</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for iss in active_issues %}
+                  <tr>
+                    <td>
+                      <small class="fw-semibold">{{ iss.book.title }}</small>
+                    </td>
+                    <td>
+                      <small>{{ iss.issue_date.strftime('%d %b %Y') }}</small>
+                    </td>
+                    <td>
+                      <small>{{ iss.due_date.strftime('%d %b %Y') }}</small>
+                    </td>
+                    <td>
+                      {% if iss.is_overdue %}
+                        <span class="badge bg-danger">
+                          {{ iss.overdue_days }}d overdue
+                        </span>
+                      {% else %}
+                        <span class="badge bg-success">Active</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted small">
+            No active issues.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fines & Behaviour -->
+<div class="row g-3">
+  <!-- Fines History -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-receipt me-1"></i>
+        Fines ({{ fines|length }})
+      </div>
+      <div class="card-body p-0">
+        {% if fines %}
+          <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+            <table class="table table-sm mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th class="text-end">Amount</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fine in fines %}
+                  <tr>
+                    <td>
+                      <small>
+                        {% if fine.fine_type == 'rent' %}Rent
+                        {% elif fine.fine_type == 'late' %}Late
+                        {% elif fine.fine_type == 'damage' %}Damage
+                        {% elif fine.fine_type == 'lost' %}Lost{% endif %}
+                      </small>
+                    </td>
+                    <td>
+                      <small>{{ fine.created_at.strftime('%d %b %Y') }}</small>
+                    </td>
+                    <td class="text-end">
+                      <small><strong>₹{{ "%.2f"|format(fine.amount) }}</strong></small>
+                    </td>
+                    <td class="text-center">
+                      {% if fine.status == 'Paid' %}
+                        <span class="badge bg-success">Paid</span>
+                      {% else %}
+                        <span class="badge bg-danger">Unpaid</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted small">
+            No fines recorded.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Behaviour Log -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-graph-up me-1"></i>
+        Behaviour Log ({{ behaviour_logs|length }})
+      </div>
+      <div class="card-body p-0">
+        {% if behaviour_logs %}
+          <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+            <table class="table table-sm mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th>Event</th>
+                  <th class="text-center">Change</th>
+                  <th class="text-center">Score</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in behaviour_logs %}
+                  <tr>
+                    <td>
+                      <small>
+                        {{ log.event_type.replace('_', ' ').title() }}
+                      </small>
+                    </td>
+                    <td class="text-center">
+                      {% if log.score_change > 0 %}
+                        <span class="badge bg-success">
+                          +{{ log.score_change }}
+                        </span>
+                      {% elif log.score_change < 0 %}
+                        <span class="badge bg-danger">
+                          {{ log.score_change }}
+                        </span>
+                      {% else %}
+                        <span class="badge bg-secondary">0</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <small>
+                        <strong>{{ log.score_after }}</strong>
+                      </small>
+                    </td>
+                    <td>
+                      <small class="text-muted">
+                        {{ log.created_at.strftime('%d %b, %H:%M') }}
+                      </small>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted small">
+            No behaviour events recorded.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

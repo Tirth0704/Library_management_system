@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i>
+            {% if unread_count and unread_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle
+                           badge rounded-pill bg-danger" style="font-size:.6rem;">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="{{ url_for('books.book_list') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Back to Browse
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Book Details Card -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              {% if book.category %}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">
+                  {{ book.category.name }}
+                </span>
+              {% endif %}
+              <h3 class="fw-bold mb-1 text-dark">{{ book.title }}</h3>
+              <p class="fs-5 text-muted mb-0">by {{ book.author }}</p>
+            </div>
+            <span class="badge {% if book.available_copies > 0 %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+              {{ book.status }}
+            </span>
+          </div>
+
+          <hr class="my-4">
+
+          <h5 class="fw-semibold mb-3">Book Specifications</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="text-muted d-block small mb-1">Publisher</span>
+                <span class="fw-bold">{{ book.publisher if book.publisher else "Not Specified" }}</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <span class="text-muted d-block small mb-1">Book Price</span>
+                <span class="fw-bold text-primary">₹{{ "%.2f"|format(book.price|float) }}</span>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <div class="p-3 bg-light rounded-3 text-center">
+                <span class="text-muted d-block small mb-1">Total Copies</span>
+                <span class="fw-bold fs-5">{{ book.total_copies }}</span>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <div class="p-3 bg-light rounded-3 text-center">
+                <span class="text-muted d-block small mb-1">Available Copies</span>
+                <span class="fw-bold fs-5 text-success">{{ book.available_copies }}</span>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <div class="p-3 bg-light rounded-3 text-center">
+                <span class="text-muted d-block small mb-1">Issued Copies</span>
+                <span class="fw-bold fs-5 text-warning">{{ book.issued_copies }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Borrow Info and Actions -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-3">Rental & Fine Policy</h5>
+          <div class="list-group list-group-flush mb-4">
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+              <span class="text-muted">Rental Charge (10%)</span>
+              <span class="fw-bold text-primary">₹{{ "%.2f"|format(book.rent) }}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+              <span class="text-muted">Late Fine (5% of rent/day)</span>
+              <span class="fw-bold text-danger">₹{{ "%.2f"|format(book.fine_per_day) }}/day</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+              <span class="text-muted">Loan Period</span>
+              <span class="fw-bold">14 Days</span>
+            </div>
+          </div>
+
+          {% set pending_request = book.book_requests.filter_by(student_id=current_user.id, status='Pending').first() %}
+          {% set active_issue = book.book_issues.filter_by(student_id=current_user.id, is_returned=False).first() %}
+
+          {% if active_issue %}
+            <div class="alert alert-info border-0 rounded-3 mb-0">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              You currently have this book issued.
+              <div class="mt-2 small">
+                Due date: <strong>{{ active_issue.due_date.strftime('%d %b %Y') }}</strong>
+              </div>
+            </div>
+          {% elif pending_request %}
+            <div class="alert alert-warning border-0 rounded-3 mb-0">
+              <i class="bi bi-clock-fill me-2"></i>
+              You have requested this book. Awaiting librarian approval.
+            </div>
+          {% elif book.available_copies < 1 or book.status == "Unavailable" %}
+            <button class="btn btn-secondary btn-lg w-100 disabled rounded-3">
+              <i class="bi bi-x-circle me-2"></i> Out of Stock
+            </button>
+          {% else %}
+            <form method="POST" action="{{ url_for('books.request_book', book_id=book.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3">
+                <i class="bi bi-journal-plus me-2"></i> Request Book
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

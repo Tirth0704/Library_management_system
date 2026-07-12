@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Book Recommendations — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#studentNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="studentNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('books.book_list') }}">
+            <i class="bi bi-search"></i> Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('requests.my_books') }}">
+            <i class="bi bi-journal-bookmark"></i> My Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('payments.my_fines') }}">
+            <i class="bi bi-receipt"></i> Fines
+          </a>
+        </li>
+        <li class="nav-item position-relative">
+          <a class="nav-link" href="{{ url_for('notifications.notifications') }}">
+            <i class="bi bi-bell"></i>
+            {% if unread_count and unread_count > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle
+                           badge rounded-pill bg-danger" style="font-size:.6rem;">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <h5 class="fw-bold mb-0">
+    <i class="bi bi-lightbulb me-1"></i> Book Recommendations
+  </h5>
+  <small class="text-muted">
+    Suggest a book you'd like added to the library
+  </small>
+</div>
+
+<div class="row g-4">
+
+  <!-- Form Column -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-plus-circle me-1 text-primary"></i>
+        Submit New Recommendation
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('recommendations.recommendations') }}"
+              novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.book_name.label(class="form-label fw-semibold") }}
+            {{ form.book_name(
+                class="form-control" + (" is-invalid" if form.book_name.errors else ""),
+                placeholder="e.g. Atomic Habits"
+            ) }}
+            {% for e in form.book_name.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.author.label(class="form-label fw-semibold") }}
+            {{ form.author(
+                class="form-control" + (" is-invalid" if form.author.errors else ""),
+                placeholder="e.g. James Clear"
+            ) }}
+            {% for e in form.author.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.publisher.label(class="form-label fw-semibold") }}
+            {{ form.publisher(
+                class="form-control",
+                placeholder="e.g. Penguin Random House"
+            ) }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.reason.label(class="form-label fw-semibold") }}
+            {{ form.reason(
+                class="form-control",
+                rows=3,
+                placeholder="Why should this book be added?"
+            ) }}
+          </div>
+
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Column -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 pt-3 fw-semibold">
+        <i class="bi bi-clock-history me-1 text-secondary"></i>
+        My Past Recommendations ({{ recommendations|length }})
+      </div>
+      <div class="card-body p-0">
+        {% if recommendations %}
+          <div class="list-group list-group-flush">
+            {% for rec in recommendations %}
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div>
+                    <strong>{{ rec.book_name }}</strong>
+                    <br>
+                    <small class="text-muted">by {{ rec.author }}</small>
+                    {% if rec.publisher %}
+                      <small class="text-muted">
+                        · {{ rec.publisher }}
+                      </small>
+                    {% endif %}
+                  </div>
+                  {% if rec.status == "Pending" %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-clock"></i> Pending
+                    </span>
+                  {% elif rec.status == "Approved" %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle"></i> Approved
+                    </span>
+                  {% elif rec.status == "Rejected" %}
+                    <span class="badge bg-danger">
+                      <i class="bi bi-x-circle"></i> Rejected
+                    </span>
+                  {% endif %}
+                </div>
+
+                {% if rec.reason %}
+                  <p class="small text-muted mb-1 mt-2">
+                    <i class="bi bi-chat-left-quote"></i>
+                    {{ rec.reason }}
+                  </p>
+                {% endif %}
+
+                {% if rec.librarian_note %}
+                  <div class="small mt-2
+                    {{ 'text-success' if rec.status == 'Approved' else 'text-danger' }}">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Librarian note:</strong> {{ rec.librarian_note }}
+                  </div>
+                {% endif %}
+
+                <small class="text-muted d-block mt-2">
+                  Submitted: {{ rec.submitted_at.strftime('%d %b %Y, %H:%M') }}
+                </small>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+            <p class="mb-0 small">
+              You haven't submitted any recommendations yet.
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

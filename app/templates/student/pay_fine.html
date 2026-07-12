@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Pay Fine — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('student.dashboard') }}">
+      <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
+    </a>
+    <div class="ms-auto">
+      <a href="{{ url_for('payments.my_fines') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Fines
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4 p-md-5">
+
+        <div class="text-center mb-4">
+          <i class="bi bi-credit-card-2-front fs-1 text-primary"></i>
+          <h4 class="fw-bold mt-2 mb-0">Pay Fine</h4>
+          <small class="text-muted">Secure payment via Razorpay</small>
+        </div>
+
+        <!-- Fine Details Card -->
+        <div class="bg-light rounded-3 p-3 mb-4">
+          <div class="row g-2 small">
+            <div class="col-6">
+              <span class="text-muted">Fine Type</span>
+            </div>
+            <div class="col-6 text-end fw-semibold">
+              {% if fine.fine_type == 'rent' %}Book Rent
+              {% elif fine.fine_type == 'late' %}Late Fine
+              {% elif fine.fine_type == 'damage' %}Damage Fine
+              {% elif fine.fine_type == 'lost' %}Lost Book
+              {% endif %}
+            </div>
+
+            <div class="col-6"><span class="text-muted">Description</span></div>
+            <div class="col-6 text-end">{{ fine.description or "—" }}</div>
+
+            <div class="col-6"><span class="text-muted">Date</span></div>
+            <div class="col-6 text-end">
+              {{ fine.created_at.strftime('%d %b %Y') }}
+            </div>
+
+            <div class="col-12"><hr class="my-2"></div>
+
+            <div class="col-6 fs-5">
+              <strong>Amount Due</strong>
+            </div>
+            <div class="col-6 text-end fs-5">
+              <strong class="text-danger">
+                ₹{{ "%.2f"|format(fine.amount) }}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Info -->
+        <div class="mb-4">
+          <small class="text-muted d-block">Paying as</small>
+          <strong>{{ student.full_name }}</strong>
+          <br>
+          <small class="text-muted">
+            {{ student.enrollment_number }} · {{ student.email }}
+          </small>
+        </div>
+
+        <!-- Payment Methods Info -->
+        <div class="alert alert-info small d-flex align-items-start gap-2">
+          <i class="bi bi-shield-check fs-5"></i>
+          <div>
+            You'll be redirected to Razorpay's secure payment page.
+            Supports UPI, Cards, Net Banking, and Wallets.
+            Your receipt will be available immediately after payment.
+          </div>
+        </div>
+
+        <!-- Pay Button -->
+        <button
+          type="button"
+          id="pay-button"
+          class="btn btn-primary btn-lg w-100 fw-semibold"
+        >
+          <i class="bi bi-credit-card me-1"></i>
+          Pay ₹{{ "%.2f"|format(fine.amount) }}
+        </button>
+
+        <div class="text-center mt-3">
+          <a href="{{ url_for('payments.my_fines') }}"
+             class="text-decoration-none small text-muted">
+            <i class="bi bi-x-circle"></i> Cancel Payment
+          </a>
+        </div>
+
+        <!-- Hidden form for callback -->
+        <form
+          id="razorpay-callback-form"
+          method="POST"
+          action="{{ url_for('payments.razorpay_callback', fine_id=fine.id) }}"
+          class="d-none"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="razorpay_payment_id" id="rp-payment-id" />
+          <input type="hidden" name="razorpay_order_id" id="rp-order-id" />
+          <input type="hidden" name="razorpay_signature" id="rp-signature" />
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Footer note -->
+    <p class="text-center text-muted small mt-3">
+      <i class="bi bi-lock-fill"></i>
+      Powered by Razorpay · 256-bit encrypted
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  // Pass server-side data safely to JS
+  const razorpayConfig = {
+    key: "{{ razorpay_key }}",
+    order_id: "{{ order.id }}",
+    amount: {{ order.amount }},
+    currency: "{{ order.currency }}",
+    student_name: "{{ student.full_name|escape }}",
+    student_email: "{{ student.email|escape }}",
+    student_phone: "{{ student.phone_number|escape }}"
+  };
+</script>
+<script src="{{ url_for('static', filename='js/payment.js') }}"></script>
+{% endblock %}

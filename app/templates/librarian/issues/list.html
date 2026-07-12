@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Active Issues — LibraryHub{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="{{ url_for('librarian_dashboard.dashboard') }}">
+      <i class="bi bi-shield-lock me-1"></i> LibraryHub Admin
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('librarian_returns.return_list') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-arrow-return-left"></i> Process Returns
+      </a>
+      <a href="{{ url_for('librarian_dashboard.dashboard') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0">
+      <i class="bi bi-journal-bookmark me-1"></i> Active Issues
+    </h5>
+    <small class="text-muted">
+      {{ issues|length }} book(s) currently issued
+    </small>
+  </div>
+</div>
+
+<!-- Filter Tabs + Search -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <form method="GET" action="{{ url_for('librarian_issues.issue_list') }}">
+          <input type="hidden" name="filter" value="{{ filter_type }}" />
+          <div class="input-group">
+            <span class="input-group-text bg-white">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              name="q"
+              class="form-control"
+              placeholder="Search by student name..."
+              value="{{ search or '' }}"
+            />
+            <button class="btn btn-dark" type="submit">Search</button>
+          </div>
+        </form>
+      </div>
+      <div class="col-md-6">
+        <div class="btn-group w-100">
+          <a
+            href="{{ url_for('librarian_issues.issue_list', filter='all',
+                             q=search) }}"
+            class="btn btn-outline-dark {{ 'active' if filter_type == 'all' else '' }}"
+          >
+            All Issues
+          </a>
+          <a
+            href="{{ url_for('librarian_issues.issue_list', filter='overdue',
+                             q=search) }}"
+            class="btn btn-outline-danger {{ 'active' if filter_type == 'overdue' else '' }}"
+          >
+            <i class="bi bi-exclamation-triangle"></i> Overdue Only
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if issues %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Student</th>
+            <th>Book</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in issues %}
+            {% set is_overdue = issue.due_date < today %}
+            {% set overdue_days = (today - issue.due_date).days if is_overdue else 0 %}
+            <tr class="{{ 'table-danger' if is_overdue else '' }}">
+              <td>
+                <a
+                  href="{{ url_for('librarian_students.student_detail',
+                                   student_id=issue.student.id) }}"
+                  class="text-decoration-none"
+                >
+                  <strong>{{ issue.student.full_name }}</strong>
+                </a>
+                <br>
+                <small class="text-muted">
+                  {{ issue.student.enrollment_number }}
+                </small>
+              </td>
+              <td>
+                <div class="fw-semibold">{{ issue.book.title }}</div>
+                <small class="text-muted">by {{ issue.book.author }}</small>
+              </td>
+              <td>
+                <small>{{ issue.issue_date.strftime('%d %b %Y') }}</small>
+              </td>
+              <td>
+                <small class="{{ 'text-danger fw-bold' if is_overdue else '' }}">
+                  {{ issue.due_date.strftime('%d %b %Y') }}
+                </small>
+              </td>
+              <td>
+                {% if is_overdue %}
+                  <span class="badge bg-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ overdue_days }}d overdue
+                  </span>
+                {% else %}
+                  {% set days_left = (issue.due_date - today).days %}
+                  {% if days_left <= 2 %}
+                    <span class="badge bg-warning text-dark">
+                      Due in {{ days_left }}d
+                    </span>
+                  {% else %}
+                    <span class="badge bg-success">On Track</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a
+                  href="{{ url_for('librarian_returns.return_detail',
+                                   issue_id=issue.id) }}"
+                  class="btn btn-sm btn-primary"
+                >
+                  <i class="bi bi-arrow-return-left"></i> Process Return
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+    <p class="mb-0">
+      No {{ 'overdue' if filter_type == 'overdue' else 'active' }} issues right now.
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
