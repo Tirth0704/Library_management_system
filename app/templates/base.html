@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}LibraryHub 2.0{% endblock %}</title>
+  <title>{% block title %}LibraryHub{% endblock %}</title>
 
   <!-- Bootstrap 5 -->
   <link
@@ -17,48 +17,268 @@
   />
   <!-- Main CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  <!-- Plus Jakarta Sans Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   {% block extra_css %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %} {% if session.get('is_librarian') %}librarian-panel{% elif current_user.is_authenticated %}student-panel{% endif %}">
 
-  {% block navbar %}
-  <!-- Default navbar — overridden in student/librarian layouts -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="#">
-        <i class="bi bi-book-half me-1"></i> LibraryHub 2.0
-      </a>
-    </div>
-  </nav>
-  {% endblock %}
-
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="container mt-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  {% if session.get('is_librarian') or current_user.is_authenticated %}
+    <!-- Unified Sidebar Layout -->
+    <div class="d-flex min-vh-100 flex-column flex-lg-row">
+      
+      <!-- Offcanvas Sidebar -->
+      <div class="offcanvas-lg offcanvas-start sidebar bg-dark text-white border-end border-dark-subtle" tabindex="-1" id="sidebarMenu" style="width: 260px; background-color: #191c1e !important;">
+        <div class="offcanvas-header border-bottom border-secondary-subtle">
+          <h5 class="offcanvas-title text-white fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-book-half text-primary"></i> LibraryHub
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu"></button>
+        </div>
+        
+        <div class="offcanvas-body d-flex flex-column p-3">
+          <!-- Brand Area (Desktop only) -->
+          <div class="d-none d-lg-block mb-4">
+            <h5 class="fw-bold text-white d-flex align-items-center gap-2 mb-0">
+              <i class="bi bi-book-half text-primary"></i> LibraryHub
+            </h5>
+            {% if session.get('is_librarian') %}
+              <small class="text-secondary text-uppercase tracking-wider fw-semibold" style="font-size: 0.65rem;">Librarian Panel</small>
+            {% else %}
+              <small class="text-secondary text-uppercase tracking-wider fw-semibold" style="font-size: 0.65rem;">Student Portal</small>
+            {% endif %}
           </div>
-        {% endfor %}
+
+          <!-- Navigation Links -->
+          <ul class="nav flex-column gap-1 mb-auto w-100">
+            {% if session.get('is_librarian') %}
+              <!-- Librarian Navigation -->
+              <li class="nav-item w-100">
+                <a class="nav-link {% if request.endpoint == 'librarian_dashboard.dashboard' %}active{% endif %}" href="{{ url_for('librarian_dashboard.dashboard') }}">
+                  <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_books' in request.endpoint or request.endpoint == 'librarian_books.book_list' %}active{% endif %}" href="{{ url_for('librarian_books.book_list') }}">
+                  <i class="bi bi-book"></i> Books
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_categories' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_categories.category_list') }}">
+                  <i class="bi bi-tags"></i> Categories
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_requests' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_requests.request_list') }}">
+                  <i class="bi bi-clock-history"></i> Requests
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_issues' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_issues.issue_list') }}">
+                  <i class="bi bi-journal-bookmark"></i> Issues
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_returns' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_returns.return_list') }}">
+                  <i class="bi bi-arrow-return-left"></i> Returns
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_students' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_students.student_list') }}">
+                  <i class="bi bi-people"></i> Students
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_payments' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_payments.payment_list') }}">
+                  <i class="bi bi-cash-coin"></i> Payments
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_recommendations' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_recommendations.recommendation_list') }}">
+                  <i class="bi bi-lightbulb"></i> Recommendations
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'librarian_notifications' in request.endpoint %}active{% endif %}" href="{{ url_for('librarian_notifications.notification_list') }}">
+                  <i class="bi bi-bell"></i> Notification Logs
+                </a>
+              </li>
+            {% else %}
+              <!-- Student Navigation -->
+              <li class="nav-item w-100">
+                <a class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}" href="{{ url_for('student.dashboard') }}">
+                  <i class="bi bi-house"></i> Dashboard
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'books' in request.endpoint %}active{% endif %}" href="{{ url_for('books.book_list') }}">
+                  <i class="bi bi-search"></i> Search Books
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'my_books' in request.endpoint %}active{% endif %}" href="{{ url_for('requests.my_books') }}">
+                  <i class="bi bi-journal-bookmark"></i> My Books
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'my_fines' in request.endpoint or 'pay_fine' in request.endpoint %}active{% endif %}" href="{{ url_for('payments.my_fines') }}">
+                  <i class="bi bi-receipt"></i> Fines & Dues
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'notifications' in request.endpoint %}active{% endif %}" href="{{ url_for('notifications.notifications') }}">
+                  <i class="bi bi-bell animate-bell"></i> Notifications
+                  {% if unread_count is defined and unread_count > 0 %}
+                    <span class="badge rounded-pill bg-danger ms-auto">{{ unread_count }}</span>
+                  {% endif %}
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'profile' in request.endpoint %}active{% endif %}" href="{{ url_for('student.profile') }}">
+                  <i class="bi bi-person-circle"></i> Profile
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'my_requests' in request.endpoint %}active{% endif %}" href="{{ url_for('requests.my_requests') }}">
+                  <i class="bi bi-clock-history"></i> My Requests
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'my_history' in request.endpoint %}active{% endif %}" href="{{ url_for('requests.my_history') }}">
+                  <i class="bi bi-archive"></i> History
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'receipts' in request.endpoint %}active{% endif %}" href="{{ url_for('payments.receipts') }}">
+                  <i class="bi bi-file-earmark-pdf"></i> Receipts
+                </a>
+              </li>
+              <li class="nav-item w-100">
+                <a class="nav-link {% if 'recommend' in request.endpoint %}active{% endif %}" href="{{ url_for('recommendations.recommendations') }}">
+                  <i class="bi bi-lightbulb"></i> Recommendations
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+
+          <!-- Footer Action in Sidebar -->
+          <div class="mt-4 pt-3 border-top border-secondary-subtle w-100">
+            <a class="nav-link text-danger d-flex align-items-center gap-2" href="{{ url_for('auth.logout') }}">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </div>
+        </div>
       </div>
-    {% endif %}
-  {% endwith %}
+
+      <!-- Mobile Top Bar Header -->
+      <div class="d-lg-none w-100 bg-dark text-white px-3 py-2 d-flex justify-content-between align-items-center border-bottom border-dark-subtle" style="background-color: #191c1e !important;">
+        <span class="fw-bold d-flex align-items-center gap-2">
+          <i class="bi bi-book-half text-primary"></i> LibraryHub
+        </span>
+        <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+
+      <!-- Main Canvas Content -->
+      <div class="flex-grow-1 d-flex flex-column min-vh-100 bg-light" style="background-color: #f7f9fb !important;">
+        <!-- Top Header bar (Desktop only) -->
+        <header class="d-none d-lg-flex bg-white px-4 py-3 border-bottom align-items-center justify-content-between sticky-top" style="height: 64px; border-color: #e6e8ea !important;">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-1 bg-success animate-pulse-status" style="width: 8px; height: 8px; display: inline-block;"></span>
+            <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">System Status: Healthy</span>
+          </div>
+          
+          <div class="d-flex align-items-center gap-3">
+            {% if not session.get('is_librarian') and unread_count is defined and unread_count > 0 %}
+              <a href="{{ url_for('notifications.notifications') }}" class="btn btn-light rounded-circle p-2 position-relative">
+                <i class="bi bi-bell"></i>
+                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+              </a>
+            {% endif %}
+            
+            <div class="border-end h-75 my-auto mx-2" style="border-color: #e6e8ea !important; height: 24px;"></div>
+            
+            <div class="d-flex align-items-center gap-2">
+              <div class="text-end">
+                {% if session.get('is_librarian') %}
+                  <div class="fw-bold text-dark" style="font-size: 0.85rem;">Librarian Admin</div>
+                  <div class="text-secondary" style="font-size: 0.75rem;">Head Office</div>
+                {% else %}
+                  <div class="fw-bold text-dark" style="font-size: 0.85rem;">{{ current_user.full_name }}</div>
+                  <div class="text-secondary" style="font-size: 0.75rem;">{{ current_user.enrollment_number }}</div>
+                {% endif %}
+              </div>
+              {% if session.get('is_librarian') %}
+                <i class="bi bi-shield-lock text-primary fs-5"></i>
+              {% else %}
+                <i class="bi bi-person text-primary fs-5"></i>
+              {% endif %}
+            </div>
+          </div>
+        </header>
+  {% else %}
+    <!-- Guest/Auth Layout -->
+    {% block navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">
+          <i class="bi bi-book-half me-1"></i> LibraryHub
+        </a>
+      </div>
+    </nav>
+    {% endblock %}
+  {% endif %}
+
+  <!-- Flash Messages (Shared conditional placement) -->
+  {% if not (session.get('is_librarian') or current_user.is_authenticated) %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mt-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
 
   <!-- Main Content -->
-  <main class="{% block main_class %}container py-4{% endblock %}">
+  <main class="{% if session.get('is_librarian') or current_user.is_authenticated %}flex-grow-1 p-4{% else %}{% block main_class %}container py-4{% endblock %}{% endif %}">
+    {% if session.get('is_librarian') or current_user.is_authenticated %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    {% endif %}
+
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
-  {% block footer %}
-  <footer class="footer mt-auto py-3 bg-light border-top">
-    <div class="container text-center text-muted small">
-      &copy; {{ now.year if now else "2025" }} LibraryHub 2.0 — Built by Tirth Acharya
+  {% if session.get('is_librarian') or current_user.is_authenticated %}
+      </div>
     </div>
-  </footer>
-  {% endblock %}
+  {% else %}
+    <!-- Footer -->
+    {% block footer %}
+    <footer class="footer mt-auto py-3 bg-light border-top">
+      <div class="container text-center text-muted small">
+        &copy; {{ now.year if now else "2025" }} LibraryHub — Built by Tirth Acharya
+      </div>
+    </footer>
+    {% endblock %}
+  {% endif %}
 
   <!-- Bootstrap JS -->
   <script
