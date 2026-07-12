@@ -75,7 +75,8 @@ def verify_razorpay_signature(order_id: str, payment_id: str,
     secret = current_app.config["RAZORPAY_KEY_SECRET"].encode("utf-8")
     message = f"{order_id}|{payment_id}".encode("utf-8")
     expected = hmac.new(secret, message, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    # Both must be the same type (str); Razorpay signature is a hex string
+    return hmac.compare_digest(expected, str(signature))
 
 
 def complete_razorpay_payment(fine: Fine, student: Student,
@@ -134,16 +135,27 @@ def complete_razorpay_payment(fine: Fine, student: Student,
     db.session.commit()
 
     # Generate receipt
-    from app.services.receipt_service import generate_receipt
-    receipt_path = generate_receipt(payment, fine, student)
-    payment.receipt_path = receipt_path
-    db.session.commit()
+    receipt_path = None
+    try:
+        from app.services.receipt_service import generate_receipt
+        receipt_path = generate_receipt(payment, fine, student)
+        payment.receipt_path = receipt_path
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Receipt generation failed: {e}")
 
-    # Notifications
-    notify_fine_paid(student.id, fine.amount, "razorpay")
-    db.session.commit()
+    # In-app notification
+    try:
+        notify_fine_paid(student.id, fine.amount, "razorpay")
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"In-app notification failed: {e}")
 
-    send_fine_payment_confirmed(student, fine.amount, "razorpay", receipt_path=receipt_path)
+    # WhatsApp confirmation (never crash the payment on WA failure)
+    try:
+        send_fine_payment_confirmed(student, fine.amount, "razorpay", receipt_path=receipt_path)
+    except Exception as e:
+        current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 
     return payment
 
@@ -184,14 +196,27 @@ def complete_cash_payment(fine: Fine, student: Student) -> Payment:
 
     db.session.commit()
 
-    from app.services.receipt_service import generate_receipt
-    receipt_path = generate_receipt(payment, fine, student)
-    payment.receipt_path = receipt_path
-    db.session.commit()
+    # Generate receipt
+    receipt_path = None
+    try:
+        from app.services.receipt_service import generate_receipt
+        receipt_path = generate_receipt(payment, fine, student)
+        payment.receipt_path = receipt_path
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Receipt generation failed: {e}")
 
-    notify_fine_paid(student.id, fine.amount, "cash")
-    db.session.commit()
+    # In-app notification
+    try:
+        notify_fine_paid(student.id, fine.amount, "cash")
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"In-app notification failed: {e}")
 
-    send_fine_payment_confirmed(student, fine.amount, "cash", receipt_path=receipt_path)
+    # WhatsApp confirmation
+    try:
+        send_fine_payment_confirmed(student, fine.amount, "cash", receipt_path=receipt_path)
+    except Exception as e:
+        current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 
     return payment

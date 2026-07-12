@@ -12,6 +12,7 @@ from app.services.payment_service import (
     create_razorpay_order,
     complete_razorpay_payment
 )
+from app.services.whatsapp_service import send_payment_declined
 from flask import current_app
 
 payments_bp = Blueprint("payments", __name__)
@@ -73,6 +74,32 @@ def pay_fine(fine_id: int):
     )
 
 
+@payments_bp.route("/pay/<int:fine_id>/failed", methods=["POST"])
+@student_required
+def razorpay_failed(fine_id: int):
+    """
+    Called by JS payment.failed handler when Razorpay reports a failure
+    (e.g. card declined, UPI timeout, user dismissed after failed attempt).
+    Sends a WhatsApp declined notification and redirects to /my-fines.
+    """
+    student = current_user
+    fine = Fine.query.filter_by(
+        id=fine_id,
+        student_id=student.id,
+        status="Unpaid"
+    ).first_or_404()
+
+    error_desc = request.form.get("error_description", "Payment could not be completed.")
+
+    try:
+        send_payment_declined(student, fine.amount, reason=error_desc)
+    except Exception as e:
+        current_app.logger.error(f"WhatsApp declined notification failed: {e}")
+
+    flash("Payment was not completed. Please try again or contact the library desk.", "warning")
+    return redirect(url_for("payments.my_fines"))
+
+
 @payments_bp.route("/pay/<int:fine_id>/razorpay", methods=["POST"])
 @student_required
 def razorpay_callback(fine_id: int):
@@ -108,10 +135,20 @@ def razorpay_callback(fine_id: int):
         return redirect(url_for("payments.receipts"))
 
     except ValueError as e:
+        # Signature verification failed — payment was not genuine
+        try:
+            send_payment_declined(student, fine.amount, reason="Payment verification failed.")
+        except Exception:
+            pass
         flash(f"Payment verification failed: {str(e)}", "danger")
         return redirect(url_for("payments.pay_fine", fine_id=fine_id))
 
     except Exception as e:
+        # Unexpected server-side error
+        try:
+            send_payment_declined(student, fine.amount, reason="An unexpected error occurred.")
+        except Exception:
+            pass
         flash(f"Unexpected error: {str(e)}", "danger")
         return redirect(url_for("payments.pay_fine", fine_id=fine_id))
 

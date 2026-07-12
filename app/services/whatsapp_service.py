@@ -138,24 +138,37 @@ def send_overdue_notice(student, book_title: str, due_date) -> WhatsappLog:
 
 
 def send_fine_payment_confirmed(student, amount, payment_method: str, receipt_path: str = None) -> WhatsappLog:
-    message = (
-        f"Hello {student.full_name},\n\n"
-        f"Your payment of *₹{float(amount):.2f}* has been confirmed "
-        f"via {payment_method.capitalize()}.\n"
-    )
-    if receipt_path:
-        message += "Your digital payment receipt is attached below.\n\n"
-    else:
-        message += "You can download your receipt from the LibraryHub dashboard.\n\n"
-    message += "— LibraryHub"
-
+    """
+    Sends a WhatsApp confirmation after a successful fine payment.
+    Attaches the receipt PDF only when served from a publicly accessible URL
+    (not localhost) — Twilio rejects the entire message if media is unreachable.
+    """
     media_url = None
+
     if receipt_path:
         try:
             from flask import request
-            media_url = request.url_root.rstrip('/') + '/static/' + receipt_path
+            base = request.url_root.rstrip('/')
+            candidate = f"{base}/static/{receipt_path}"
+            # Only attach media if the server is publicly reachable
+            is_local = any(h in base for h in ["localhost", "127.0.0.1", "0.0.0.0"])
+            if not is_local:
+                media_url = candidate
         except Exception:
-            media_url = f"http://localhost:5000/static/{receipt_path}"
+            pass  # No request context — skip media
+
+    message = (
+        f"Hello {student.full_name},\n\n"
+        f"✅ Your payment of *₹{float(amount):.2f}* has been confirmed "
+        f"via {payment_method.capitalize()}.\n"
+    )
+    if media_url:
+        message += "Your digital payment receipt is attached below.\n\n"
+    elif receipt_path:
+        message += "Your receipt is ready — download it from the *My Receipts* section on LibraryHub.\n\n"
+    else:
+        message += "You can download your receipt from the LibraryHub dashboard.\n\n"
+    message += "— LibraryHub"
 
     return send_whatsapp(
         student.id, student.phone_number, "fine_paid", message, media_url=media_url
@@ -175,4 +188,21 @@ def send_book_returned(student, book_title: str, condition: str, total_due: floa
     message += "\nThank you for returning it!\n\n— LibraryHub"
     return send_whatsapp(
         student.id, student.phone_number, "book_returned", message
+    )
+
+
+def send_payment_declined(student, amount, reason: str = None) -> WhatsappLog:
+    """Sends a WhatsApp message when a Razorpay payment is declined or fails."""
+    message = (
+        f"Hello {student.full_name},\n\n"
+        f"⚠️ Your payment of *₹{float(amount):.2f}* could not be processed.\n"
+    )
+    if reason:
+        message += f"Reason: {reason}\n"
+    message += (
+        "\nPlease try again from your fines page or contact the library desk "
+        "for assistance.\n\n— LibraryHub"
+    )
+    return send_whatsapp(
+        student.id, student.phone_number, "payment_declined", message
     )

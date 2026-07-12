@@ -10,8 +10,9 @@
   document.addEventListener("DOMContentLoaded", function () {
     const payButton = document.getElementById("pay-button");
     const callbackForm = document.getElementById("razorpay-callback-form");
+    const failedForm = document.getElementById("razorpay-failed-form");
 
-    if (!payButton || !callbackForm) {
+    if (!payButton || !callbackForm || !failedForm) {
       return;
     }
 
@@ -19,6 +20,16 @@
     if (typeof razorpayConfig === "undefined") {
       console.error("[Payment] razorpayConfig not found in template");
       return;
+    }
+
+    /**
+     * Posts to the /failed route with an error description.
+     * The server sends the WhatsApp declined message and redirects to /my-fines.
+     */
+    function submitFailure(description) {
+      document.getElementById("rp-failed-desc").value =
+        description || "Payment could not be completed.";
+      failedForm.submit();
     }
 
     /* ─── Build Razorpay options ─────────────────────────────────────── */
@@ -64,8 +75,10 @@
       /* ─── Modal close handler ─────────────────────────────────────── */
       modal: {
         ondismiss: function () {
+          // User closed the Razorpay modal without completing payment
           console.log("[Payment] Razorpay modal dismissed by user");
           payButton.disabled = false;
+          // No WhatsApp on simple dismiss — user didn't even attempt
         },
         escape: true,
         backdropclose: false
@@ -90,14 +103,15 @@
       try {
         const rzp = new Razorpay(options);
 
+        /* ─── payment.failed fires when Razorpay itself reports failure ─ */
         rzp.on("payment.failed", function (response) {
           console.error("[Payment] Failed:", response.error);
-          alert(
-            "Payment failed: " +
-              (response.error.description || "Unknown error") +
-              "\nPlease try again."
-          );
-          payButton.disabled = false;
+          const desc =
+            response.error.description ||
+            response.error.reason ||
+            "Payment could not be processed.";
+          // POST to server → WhatsApp notification + redirect to /my-fines
+          submitFailure(desc);
         });
 
         rzp.open();

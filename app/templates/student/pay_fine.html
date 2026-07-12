@@ -102,7 +102,7 @@
           </a>
         </div>
 
-        <!-- Hidden form for callback -->
+        <!-- Hidden form for success callback -->
         <form
           id="razorpay-callback-form"
           method="POST"
@@ -113,6 +113,17 @@
           <input type="hidden" name="razorpay_payment_id" id="rp-payment-id" />
           <input type="hidden" name="razorpay_order_id" id="rp-order-id" />
           <input type="hidden" name="razorpay_signature" id="rp-signature" />
+        </form>
+
+        <!-- Hidden form for payment failure — posts to /failed route -->
+        <form
+          id="razorpay-failed-form"
+          method="POST"
+          action="{{ url_for('payments.razorpay_failed', fine_id=fine.id) }}"
+          class="d-none"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="error_description" id="rp-failed-desc" value="" />
         </form>
 
       </div>
