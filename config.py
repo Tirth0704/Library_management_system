@@ -68,21 +68,12 @@ class Config:
     LIBRARIAN_PASSWORD = "admin@#$123"
 
     # ─── File Storage ─────────────────────────────────────────────
-    # On Render: use persistent disk at /var/data/receipts
-    # Locally:   use app/static/receipts (served as Flask static)
-    RECEIPTS_FOLDER = (
-        "/var/data/receipts"
-        if IS_RENDER
-        else os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "app", "static", "receipts"
-        )
+    # Production (Render): PDFs are uploaded to Cloudinary — no local folder needed.
+    # Development:         PDFs saved to app/static/receipts/ for local serving.
+    RECEIPTS_FOLDER = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "app", "static", "receipts"
     )
-
-    # ─── Public Base URL ──────────────────────────────────────────
-    # Render sets RENDER_EXTERNAL_URL automatically (e.g. https://app.onrender.com)
-    # Used to build public PDF links for Twilio WhatsApp media attachments
-    BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
 
     # ─── APScheduler ──────────────────────────────────────────────
     SCHEDULER_API_ENABLED = False

@@ -15,6 +15,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false         # Set manually in Render dashboard
+      - key: CLOUDINARY_URL
+        sync: false         # Set manually: cloudinary://api_key:api_secret@cloud_name
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET
@@ -25,7 +27,4 @@ services:
         sync: false
       - key: TWILIO_WHATSAPP_NUMBER
         value: "whatsapp:+14155238886"
-    disk:
-      name: receipts-storage
-      mountPath: /var/data/receipts
-      sizeGB: 1
+    # No persistent disk needed — PDFs are stored on Cloudinary (free tier)

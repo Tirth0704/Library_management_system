@@ -138,40 +138,29 @@ def send_overdue_notice(student, book_title: str, due_date) -> WhatsappLog:
 
 
 def send_fine_payment_confirmed(student, amount, payment_method: str,
-                                receipt_path: str = None,
-                                payment_id: int = None) -> WhatsappLog:
+                                receipt_path: str = None) -> WhatsappLog:
     """
     Sends a WhatsApp confirmation after a successful fine payment.
 
-    On Render: attaches PDF via the public /receipt-pdf/<id> route using
-    RENDER_EXTERNAL_URL from config (auto-set by Render).
-    Locally: skips media attachment since localhost is not reachable by Twilio.
+    In production (Render + Cloudinary): receipt_path is a public Cloudinary
+    HTTPS URL — used directly as Twilio media_url to attach the PDF.
+
+    Locally: receipt_path is a relative file path; media is skipped since
+    localhost is not reachable by Twilio.
 
     Args:
         student:        Student object
         amount:         Amount paid
         payment_method: 'razorpay' or 'cash'
-        receipt_path:   Relative path like 'receipts/receipt_1.pdf' (optional)
-        payment_id:     Payment DB id — used to build the public PDF URL
+        receipt_path:   Cloudinary URL or local relative path (optional)
     """
     media_url = None
 
-    if receipt_path and payment_id:
-        try:
-            # Use Render's public URL from config (set automatically by Render)
-            base_url = current_app.config.get("BASE_URL", "").rstrip("/")
-
-            # Fallback: try to build from request context (local dev)
-            if not base_url:
-                from flask import request as _req
-                base_url = _req.url_root.rstrip("/")
-
-            # Only attach if not localhost (Twilio can't reach local servers)
-            is_local = any(h in base_url for h in ["localhost", "127.0.0.1", "0.0.0.0"])
-            if base_url and not is_local:
-                media_url = f"{base_url}/receipt-pdf/{payment_id}"
-        except Exception:
-            pass  # Never crash payment on WhatsApp failure
+    if receipt_path:
+        # Cloudinary URLs start with https:// — ready for Twilio immediately
+        if receipt_path.startswith("http"):
+            media_url = receipt_path
+        # Local paths (dev): Twilio can't reach localhost, so skip attachment
 
     message = (
         f"Hello {student.full_name},\n\n"

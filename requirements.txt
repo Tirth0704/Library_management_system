@@ -42,3 +42,6 @@ python-dateutil==2.9.0
 
 # Production WSGI server (Render)
 gunicorn==22.0.0
+
+# Cloud storage for PDF receipts (Render — no persistent disk on free tier)
+cloudinary==1.41.0
