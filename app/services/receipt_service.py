@@ -1,5 +1,4 @@
 import io
-import os
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -8,22 +7,18 @@ from reportlab.lib import colors
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
-from flask import current_app
 from app.models.payment import Payment
 from app.models.fine import Fine
 from app.models.student import Student
 
 
-def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
+def generate_receipt_pdf_bytes(payment: Payment, fine: Fine, student: Student) -> bytes:
     """
-    Generates a PDF receipt for a completed payment using ReportLab.
+    Generates a PDF receipt for a completed payment using ReportLab
+    completely in memory, returning the raw PDF bytes.
 
-    On Render (production): builds PDF in memory, uploads to Cloudinary,
-    and returns the public Cloudinary URL. The URL is stored in
-    payment.receipt_path and sent as a Twilio WhatsApp media attachment.
-
-    Locally (development): saves PDF to app/static/receipts/ and returns
-    the relative path 'receipts/receipt_<id>.pdf'.
+    Eliminates dependencies on local disk storage or third-party cloud
+    services (Cloudinary) by generating PDFs on-the-fly when requested.
 
     Args:
         payment: Completed Payment record
@@ -31,9 +26,8 @@ def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
         student: The Student who paid
 
     Returns:
-        str: Cloudinary URL in production OR relative path locally.
+        bytes: Raw PDF content.
     """
-    # ─── Build PDF into a memory buffer ────────────────────────────────────────
     buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(
@@ -127,34 +121,4 @@ def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
 
     doc.build(story)
     buffer.seek(0)
-    pdf_bytes = buffer.getvalue()
-
-    # ─── Store PDF: Cloudinary (prod) or local disk (dev) ─────────────────────
-    import os as _os
-    cloudinary_url = _os.environ.get("CLOUDINARY_URL", "")
-
-    if cloudinary_url and cloudinary_url.startswith("cloudinary://"):
-        # Production: upload to Cloudinary and return public URL
-        import cloudinary
-        import cloudinary.uploader
-
-        # Explicitly configure from env var to avoid auto-parse issues
-        cloudinary.config(cloudinary_url=cloudinary_url)
-
-        result = cloudinary.uploader.upload(
-            io.BytesIO(pdf_bytes),          # file-like object, not raw bytes
-            resource_type="image",
-            public_id=f"libraryhub_receipts/receipt_{payment.id}",
-            overwrite=True,
-            format="pdf"
-        )
-        return result["secure_url"]
-    else:
-        # Local dev: save to app/static/receipts/ (served by Flask)
-        receipts_dir = current_app.config["RECEIPTS_FOLDER"]
-        os.makedirs(receipts_dir, exist_ok=True)
-        filename = f"receipt_{payment.id}.pdf"
-        filepath = os.path.join(receipts_dir, filename)
-        with open(filepath, "wb") as f:
-            f.write(pdf_bytes)
-        return f"receipts/{filename}"
+    return buffer.getvalue()

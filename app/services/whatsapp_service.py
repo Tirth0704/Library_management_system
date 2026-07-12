@@ -138,29 +138,30 @@ def send_overdue_notice(student, book_title: str, due_date) -> WhatsappLog:
 
 
 def send_fine_payment_confirmed(student, amount, payment_method: str,
-                                receipt_path: str = None) -> WhatsappLog:
+                                payment_id: int = None) -> WhatsappLog:
     """
     Sends a WhatsApp confirmation after a successful fine payment.
 
-    In production (Render + Cloudinary): receipt_path is a public Cloudinary
-    HTTPS URL — used directly as Twilio media_url to attach the PDF.
-
-    Locally: receipt_path is a relative file path; media is skipped since
-    localhost is not reachable by Twilio.
+    Builds a login-free dynamic URL (e.g. https://app.onrender.com/receipt-pdf/ID)
+    that generates and serves the PDF on-the-fly for Twilio to attach inline.
 
     Args:
         student:        Student object
         amount:         Amount paid
         payment_method: 'razorpay' or 'cash'
-        receipt_path:   Cloudinary URL or local relative path (optional)
+        payment_id:     Payment DB ID (optional)
     """
     media_url = None
 
-    if receipt_path:
-        # Cloudinary URLs start with https:// — ready for Twilio immediately
-        if receipt_path.startswith("http"):
-            media_url = receipt_path
-        # Local paths (dev): Twilio can't reach localhost, so skip attachment
+    if payment_id:
+        try:
+            base_url = current_app.config.get("BASE_URL", "").rstrip("/")
+            if base_url:
+                is_local = any(h in base_url for h in ["localhost", "127.0.0.1", "0.0.0.0"])
+                if not is_local:
+                    media_url = f"{base_url}/receipt-pdf/{payment_id}"
+        except Exception:
+            pass  # Never crash payment on WhatsApp failure
 
     message = (
         f"Hello {student.full_name},\n\n"
@@ -169,8 +170,6 @@ def send_fine_payment_confirmed(student, amount, payment_method: str,
     )
     if media_url:
         message += "Your digital payment receipt is attached below.\n\n"
-    elif receipt_path:
-        message += "Your receipt is ready — download it from the *My Receipts* section on LibraryHub.\n\n"
     else:
         message += "You can download your receipt from the LibraryHub dashboard.\n\n"
     message += "— LibraryHub"

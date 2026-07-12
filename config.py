@@ -75,6 +75,11 @@ class Config:
         "app", "static", "receipts"
     )
 
+    # ─── Public Base URL ──────────────────────────────────────────
+    # Render sets RENDER_EXTERNAL_URL automatically (e.g. https://app.onrender.com)
+    # Used to build public dynamic PDF links for Twilio WhatsApp media attachments
+    BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+
     # ─── APScheduler ──────────────────────────────────────────────
     SCHEDULER_API_ENABLED = False
     SCHEDULER_TIMEZONE = "Asia/Kolkata"

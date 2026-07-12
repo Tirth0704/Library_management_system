@@ -134,15 +134,9 @@ def complete_razorpay_payment(fine: Fine, student: Student,
 
     db.session.commit()
 
-    # Generate receipt
-    receipt_path = None
-    try:
-        from app.services.receipt_service import generate_receipt
-        receipt_path = generate_receipt(payment, fine, student)
-        payment.receipt_path = receipt_path
-        db.session.commit()
-    except Exception as e:
-        current_app.logger.error(f"Receipt generation failed: {e}")
+    # Mark receipt path as dynamic (receipt is generated on-the-fly when requested)
+    payment.receipt_path = "dynamic"
+    db.session.commit()
 
     # In-app notification
     try:
@@ -153,7 +147,7 @@ def complete_razorpay_payment(fine: Fine, student: Student,
 
     # WhatsApp confirmation (never crash the payment on WA failure)
     try:
-        send_fine_payment_confirmed(student, fine.amount, "razorpay", receipt_path=receipt_path)
+        send_fine_payment_confirmed(student, fine.amount, "razorpay", payment_id=payment.id)
     except Exception as e:
         current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 
@@ -163,21 +157,6 @@ def complete_razorpay_payment(fine: Fine, student: Student,
 def complete_cash_payment(fine: Fine, student: Student) -> Payment:
     """
     Records a cash payment marked offline by the librarian.
-
-    Steps:
-        1. Create Payment record (Completed, method=cash)
-        2. Mark fine as Paid
-        3. Update behaviour score (+2 for immediate payment)
-        4. Create in-app notification
-        5. Send WhatsApp confirmation
-        6. Generate PDF receipt
-
-    Args:
-        fine:    The Fine record being paid
-        student: The Student making payment
-
-    Returns:
-        The Payment record.
     """
     now = datetime.utcnow()
 
@@ -194,17 +173,9 @@ def complete_cash_payment(fine: Fine, student: Student) -> Payment:
     mark_fine_paid(fine, paid_at=now)
     record_paid_fine_immediately(student)
 
+    # Mark receipt path as dynamic (receipt is generated on-the-fly when requested)
+    payment.receipt_path = "dynamic"
     db.session.commit()
-
-    # Generate receipt
-    receipt_path = None
-    try:
-        from app.services.receipt_service import generate_receipt
-        receipt_path = generate_receipt(payment, fine, student)
-        payment.receipt_path = receipt_path
-        db.session.commit()
-    except Exception as e:
-        current_app.logger.error(f"Receipt generation failed: {e}")
 
     # In-app notification
     try:
@@ -215,7 +186,7 @@ def complete_cash_payment(fine: Fine, student: Student) -> Payment:
 
     # WhatsApp confirmation
     try:
-        send_fine_payment_confirmed(student, fine.amount, "cash", receipt_path=receipt_path)
+        send_fine_payment_confirmed(student, fine.amount, "cash", payment_id=payment.id)
     except Exception as e:
         current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 

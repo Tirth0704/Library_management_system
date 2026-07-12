@@ -178,14 +178,14 @@ def receipts():
 @student_required
 def download_receipt(payment_id: int):
     """
-    Serves the PDF receipt for download.
-
-    Production (Cloudinary): receipt_path is a public HTTPS URL —
-    redirect the browser directly to it for download.
-
-    Development (local): receipt_path is a relative file path —
-    serve from the local receipts directory.
+    Generates and serves the PDF receipt for download on-the-fly.
+    No local disk storage or third-party cloud hosting needed.
     """
+    from flask import Response
+    from app.models.student import Student
+    from app.models.fine import Fine
+    from app.services.receipt_service import generate_receipt_pdf_bytes
+
     student = current_user
 
     payment = Payment.query.filter_by(
@@ -194,20 +194,52 @@ def download_receipt(payment_id: int):
         status="Completed"
     ).first_or_404()
 
-    if not payment.receipt_path:
-        flash("Receipt not found.", "warning")
+    fine = Fine.query.get_or_404(payment.fine_id)
+
+    # Generate PDF on the fly
+    try:
+        pdf_bytes = generate_receipt_pdf_bytes(payment, fine, student)
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=LibraryHub_Receipt_{payment.id}.pdf"
+            }
+        )
+    except Exception as e:
+        current_app.logger.error(f"Failed to generate receipt on the fly: {e}")
+        flash("Could not generate receipt PDF. Please try again.", "danger")
         return redirect(url_for("payments.receipts"))
 
-    # Cloudinary URL — redirect browser to it directly
-    if payment.receipt_path.startswith("http"):
-        return redirect(payment.receipt_path)
 
-    # Local dev — serve file from disk
-    receipts_dir = current_app.config["RECEIPTS_FOLDER"]
-    filename = payment.receipt_path.replace("receipts/", "")
-    return send_from_directory(
-        receipts_dir,
-        filename,
-        as_attachment=True,
-        download_name=f"LibraryHub_Receipt_{payment.id}.pdf"
-    )
+@payments_bp.route("/receipt-pdf/<int:payment_id>")
+def public_receipt_pdf(payment_id: int):
+    """
+    Public (login-free) route that generates and serves a receipt PDF inline.
+    Used by Twilio WhatsApp to fetch and attach the PDF inline.
+    """
+    from flask import Response, abort
+    from app.models.student import Student
+    from app.models.fine import Fine
+    from app.services.receipt_service import generate_receipt_pdf_bytes
+
+    payment = Payment.query.filter_by(
+        id=payment_id,
+        status="Completed"
+    ).first_or_404()
+
+    student = Student.query.get_or_404(payment.student_id)
+    fine = Fine.query.get_or_404(payment.fine_id)
+
+    try:
+        pdf_bytes = generate_receipt_pdf_bytes(payment, fine, student)
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename=LibraryHub_Receipt_{payment.id}.pdf"
+            }
+        )
+    except Exception as e:
+        current_app.logger.error(f"Public receipt PDF generation failed: {e}")
+        abort(500)
