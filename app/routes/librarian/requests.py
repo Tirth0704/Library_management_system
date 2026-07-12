@@ -125,8 +125,12 @@ def approve_request(request_id: int):
         notify_request_approved(student.id, book.title, due_date)
         db.session.commit()
 
-        # Send WhatsApp notification (no retry on failure)
-        send_request_approved(student, book.title, due_date)
+        # Send WhatsApp notification (never crash on Twilio failure)
+        try:
+            send_request_approved(student, book.title, due_date)
+        except Exception as e:
+            from flask import current_app as _app
+            _app.logger.error(f"WhatsApp approve notification failed: {e}")
 
         flash(
             f"Request approved. '{book.title}' issued to {student.full_name}.",
@@ -183,10 +187,14 @@ def reject_request(request_id: int):
         )
         db.session.commit()
 
-        # Send WhatsApp notification
-        send_request_rejected(
-            student, book.title, book_request.rejection_reason
-        )
+        # Send WhatsApp notification (never crash on Twilio failure)
+        try:
+            send_request_rejected(
+                student, book.title, book_request.rejection_reason
+            )
+        except Exception as e:
+            from flask import current_app as _app
+            _app.logger.error(f"WhatsApp reject notification failed: {e}")
 
         flash(f"Request for '{book.title}' rejected.", "info")
     else:
