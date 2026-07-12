@@ -106,8 +106,32 @@ def complete_return(issue_id: int):
     condition = form.condition.data
     damage_fine_amount = Decimal(str(form.damage_fine.data or 0))
 
-    # ── Generate Fines ─────────────────────────────────────────────────────────
-    fines = generate_fines_for_return(
+    # ── Calculate Fines and Generate Single DB Fine ───────────────────────────
+    from app.utils.helpers import (
+        calculate_rent,
+        calculate_late_fine,
+        calculate_lost_amount,
+    )
+
+    rent_amount = Decimal("0.00")
+    late_fine = Decimal("0.00")
+    damage_fine_recorded = Decimal("0.00")
+    lost_amount = Decimal("0.00")
+
+    if condition == "Lost":
+        lost_amount = calculate_lost_amount(book.price)
+        total_due = lost_amount
+    else:
+        rent_amount = calculate_rent(book.price)
+        overdue_days = (today - issue.due_date).days
+        if overdue_days > 0:
+            late_fine = calculate_late_fine(book.price, overdue_days)
+        if condition == "Damaged":
+            damage_fine_recorded = damage_fine_amount
+        total_due = rent_amount + late_fine + damage_fine_recorded
+
+    # Generate the single payment-level fine record
+    fine_record = generate_fines_for_return(
         issue=issue,
         condition=condition,
         damage_fine_amount=damage_fine_amount,
@@ -127,20 +151,6 @@ def complete_return(issue_id: int):
     book.return_copy()
 
     # ── Create BookReturn Record ───────────────────────────────────────────────
-    rent_amount = next(
-        (f.amount for f in fines if f.fine_type == "rent"), Decimal("0.00")
-    )
-    late_fine = next(
-        (f.amount for f in fines if f.fine_type == "late"), Decimal("0.00")
-    )
-    damage_fine_recorded = next(
-        (f.amount for f in fines if f.fine_type == "damage"), Decimal("0.00")
-    )
-    lost_amount = next(
-        (f.amount for f in fines if f.fine_type == "lost"), Decimal("0.00")
-    )
-    total_due = sum(f.amount for f in fines)
-
     book_return = BookReturn(
         issue_id=issue.id,
         student_id=student.id,
