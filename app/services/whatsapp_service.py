@@ -137,25 +137,41 @@ def send_overdue_notice(student, book_title: str, due_date) -> WhatsappLog:
     )
 
 
-def send_fine_payment_confirmed(student, amount, payment_method: str, receipt_path: str = None) -> WhatsappLog:
+def send_fine_payment_confirmed(student, amount, payment_method: str,
+                                receipt_path: str = None,
+                                payment_id: int = None) -> WhatsappLog:
     """
     Sends a WhatsApp confirmation after a successful fine payment.
-    Attaches the receipt PDF only when served from a publicly accessible URL
-    (not localhost) — Twilio rejects the entire message if media is unreachable.
+
+    On Render: attaches PDF via the public /receipt-pdf/<id> route using
+    RENDER_EXTERNAL_URL from config (auto-set by Render).
+    Locally: skips media attachment since localhost is not reachable by Twilio.
+
+    Args:
+        student:        Student object
+        amount:         Amount paid
+        payment_method: 'razorpay' or 'cash'
+        receipt_path:   Relative path like 'receipts/receipt_1.pdf' (optional)
+        payment_id:     Payment DB id — used to build the public PDF URL
     """
     media_url = None
 
-    if receipt_path:
+    if receipt_path and payment_id:
         try:
-            from flask import request
-            base = request.url_root.rstrip('/')
-            candidate = f"{base}/static/{receipt_path}"
-            # Only attach media if the server is publicly reachable
-            is_local = any(h in base for h in ["localhost", "127.0.0.1", "0.0.0.0"])
-            if not is_local:
-                media_url = candidate
+            # Use Render's public URL from config (set automatically by Render)
+            base_url = current_app.config.get("BASE_URL", "").rstrip("/")
+
+            # Fallback: try to build from request context (local dev)
+            if not base_url:
+                from flask import request as _req
+                base_url = _req.url_root.rstrip("/")
+
+            # Only attach if not localhost (Twilio can't reach local servers)
+            is_local = any(h in base_url for h in ["localhost", "127.0.0.1", "0.0.0.0"])
+            if base_url and not is_local:
+                media_url = f"{base_url}/receipt-pdf/{payment_id}"
         except Exception:
-            pass  # No request context — skip media
+            pass  # Never crash payment on WhatsApp failure
 
     message = (
         f"Hello {student.full_name},\n\n"

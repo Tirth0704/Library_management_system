@@ -199,3 +199,33 @@ def download_receipt(payment_id: int):
         as_attachment=True,
         download_name=f"LibraryHub_Receipt_{payment.id}.pdf"
     )
+
+
+@payments_bp.route("/receipt-pdf/<int:payment_id>")
+def public_receipt_pdf(payment_id: int):
+    """
+    Public (no-login) route that serves a receipt PDF by payment ID.
+
+    Used exclusively as the Twilio media_url for WhatsApp attachments.
+    Twilio fetches this URL server-to-server; it cannot follow a login redirect.
+
+    Only serves receipts whose status is 'Completed'.
+    """
+    payment = Payment.query.filter_by(
+        id=payment_id,
+        status="Completed"
+    ).first_or_404()
+
+    if not payment.receipt_path:
+        from flask import abort
+        abort(404)
+
+    receipts_dir = current_app.config["RECEIPTS_FOLDER"]
+    filename = payment.receipt_path.replace("receipts/", "")
+
+    return send_from_directory(
+        receipts_dir,
+        filename,
+        as_attachment=False,          # Twilio needs to read it inline
+        download_name=f"LibraryHub_Receipt_{payment.id}.pdf"
+    )

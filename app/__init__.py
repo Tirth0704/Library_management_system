@@ -97,8 +97,15 @@ def create_app():
         return {"now": datetime.now()}
 
     # ─── Start Background Scheduler (APScheduler) ──────────────────────────────
-    from app.services.scheduler_service import start_scheduler
-    start_scheduler(app)
+    # Guard: only start scheduler once.
+    # - On Render: single gunicorn worker, always starts.
+    # - Locally: Flask reloader spawns a child process; only start in the child.
+    import os as _os
+    _is_reloader_child = _os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    _is_render = _os.environ.get("RENDER", "").lower() == "true"
+    if _is_render or _is_reloader_child or not app.debug:
+        from app.services.scheduler_service import start_scheduler
+        start_scheduler(app)
 
     # ─── Create Database Tables ────────────────────────────────────────────────
     with app.app_context():

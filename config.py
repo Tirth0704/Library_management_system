@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ─── Detect Render Environment ────────────────────────────────────────────────
+IS_RENDER = os.environ.get("RENDER", "").lower() == "true"
+
 
 class Config:
     # ─── Flask Core ────────────────────────────────────────────────
@@ -12,10 +15,16 @@ class Config:
     # ─── Database ──────────────────────────────────────────────────
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL",
-        "mysql+pymysql://root:password@localhost:3306/libraryhub"
+        "mysql+pymysql://root:@localhost:3306/libraryhub"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False  # Set True to log all SQL queries (debug only)
+
+    # Enable SSL for Aiven MySQL in production
+    SQLALCHEMY_ENGINE_OPTIONS = (
+        {"connect_args": {"ssl": {}}}
+        if IS_RENDER else {}
+    )
 
     # ─── Razorpay ──────────────────────────────────────────────────
     RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
@@ -59,10 +68,21 @@ class Config:
     LIBRARIAN_PASSWORD = "admin@#$123"
 
     # ─── File Storage ─────────────────────────────────────────────
-    RECEIPTS_FOLDER = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "app", "static", "receipts"
+    # On Render: use persistent disk at /var/data/receipts
+    # Locally:   use app/static/receipts (served as Flask static)
+    RECEIPTS_FOLDER = (
+        "/var/data/receipts"
+        if IS_RENDER
+        else os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "app", "static", "receipts"
+        )
     )
+
+    # ─── Public Base URL ──────────────────────────────────────────
+    # Render sets RENDER_EXTERNAL_URL automatically (e.g. https://app.onrender.com)
+    # Used to build public PDF links for Twilio WhatsApp media attachments
+    BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
 
     # ─── APScheduler ──────────────────────────────────────────────
     SCHEDULER_API_ENABLED = False

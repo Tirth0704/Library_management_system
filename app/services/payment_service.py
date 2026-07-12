@@ -153,7 +153,11 @@ def complete_razorpay_payment(fine: Fine, student: Student,
 
     # WhatsApp confirmation (never crash the payment on WA failure)
     try:
-        send_fine_payment_confirmed(student, fine.amount, "razorpay", receipt_path=receipt_path)
+        send_fine_payment_confirmed(
+            student, fine.amount, "razorpay",
+            receipt_path=receipt_path,
+            payment_id=payment.id
+        )
     except Exception as e:
         current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 
@@ -215,7 +219,11 @@ def complete_cash_payment(fine: Fine, student: Student) -> Payment:
 
     # WhatsApp confirmation
     try:
-        send_fine_payment_confirmed(student, fine.amount, "cash", receipt_path=receipt_path)
+        send_fine_payment_confirmed(
+            student, fine.amount, "cash",
+            receipt_path=receipt_path,
+            payment_id=payment.id
+        )
     except Exception as e:
         current_app.logger.error(f"WhatsApp payment confirmation failed: {e}")
 
