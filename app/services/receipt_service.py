@@ -58,7 +58,7 @@ def generate_receipt_pdf_bytes(payment: Payment, fine: Fine, student: Student) -
         spaceAfter=12
     )
 
-    story.append(Paragraph("LibraryHub 2.0", title_style))
+    story.append(Paragraph("LibraryHub", title_style))
     story.append(Paragraph("Payment Receipt", subtitle_style))
     story.append(HRFlowable(width="100%", thickness=1,
                              color=colors.HexColor("#1a1a2e")))
@@ -115,7 +115,7 @@ def generate_receipt_pdf_bytes(payment: Payment, fine: Fine, student: Student) -
         footer_style
     ))
     story.append(Paragraph(
-        f"Generated on {datetime.utcnow().strftime('%d %b %Y %H:%M')} UTC | LibraryHub 2.0",
+        f"Generated on {datetime.utcnow().strftime('%d %b %Y %H:%M')} UTC | LibraryHub",
         footer_style
     ))
 

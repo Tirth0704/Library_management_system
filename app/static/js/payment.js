@@ -38,7 +38,7 @@
       amount: razorpayConfig.amount,
       currency: razorpayConfig.currency,
       order_id: razorpayConfig.order_id,
-      name: "LibraryHub 2.0",
+      name: "LibraryHub",
       description: "Library Fine Payment",
       image: "/static/img/logo.png",
 
@@ -86,7 +86,7 @@
 
       /* ─── Notes for tracking ──────────────────────────────────────── */
       notes: {
-        source: "LibraryHub 2.0 Web",
+        source: "LibraryHub Web",
         student: razorpayConfig.student_name
       }
     };
