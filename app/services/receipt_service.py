@@ -143,7 +143,7 @@ def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
 
         result = cloudinary.uploader.upload(
             io.BytesIO(pdf_bytes),          # file-like object, not raw bytes
-            resource_type="raw",
+            resource_type="image",
             public_id=f"libraryhub_receipts/receipt_{payment.id}",
             overwrite=True,
             format="pdf"
