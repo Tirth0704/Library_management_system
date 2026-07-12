@@ -130,14 +130,19 @@ def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
     pdf_bytes = buffer.getvalue()
 
     # ─── Store PDF: Cloudinary (prod) or local disk (dev) ─────────────────────
-    from config import IS_RENDER
+    import os as _os
+    cloudinary_url = _os.environ.get("CLOUDINARY_URL", "")
 
-    if IS_RENDER:
-        # Upload to Cloudinary — returns a public HTTPS URL
-        # Cloudinary SDK auto-reads CLOUDINARY_URL env var
+    if cloudinary_url and cloudinary_url.startswith("cloudinary://"):
+        # Production: upload to Cloudinary and return public URL
+        import cloudinary
         import cloudinary.uploader
+
+        # Explicitly configure from env var to avoid auto-parse issues
+        cloudinary.config(cloudinary_url=cloudinary_url)
+
         result = cloudinary.uploader.upload(
-            pdf_bytes,
+            io.BytesIO(pdf_bytes),          # file-like object, not raw bytes
             resource_type="raw",
             public_id=f"libraryhub_receipts/receipt_{payment.id}",
             overwrite=True,
@@ -145,7 +150,7 @@ def generate_receipt(payment: Payment, fine: Fine, student: Student) -> str:
         )
         return result["secure_url"]
     else:
-        # Save locally inside Flask's static folder (served at /static/receipts/)
+        # Local dev: save to app/static/receipts/ (served by Flask)
         receipts_dir = current_app.config["RECEIPTS_FOLDER"]
         os.makedirs(receipts_dir, exist_ok=True)
         filename = f"receipt_{payment.id}.pdf"

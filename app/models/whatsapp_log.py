@@ -36,7 +36,7 @@ class WhatsappLog(db.Model):
 
     # ─── Message Details ───────────────────────────────────────────────────────
     event_type = db.Column(db.String(50), nullable=False)
-    to_number = db.Column(db.String(20), nullable=False)
+    to_number = db.Column(db.String(50), nullable=False)  # e.g. whatsapp:+917600286838
     message_body = db.Column(db.Text, nullable=False)
 
     # ─── Delivery Status ───────────────────────────────────────────────────────
