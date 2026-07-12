@@ -497,3 +497,34 @@ code {
 .cursor-pointer {
   cursor: pointer;
 }
+
+/* ─── WhatsApp Alert Banner ──────────────────────────────────────────────── */
+.whatsapp-banner {
+  background-color: #e8f5e9 !important; /* light WhatsApp green */
+  border-bottom: 1px solid #c8e6c9 !important;
+  color: #1b5e20 !important;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.whatsapp-banner:hover {
+  background-color: #c8e6c9 !important;
+}
+
+.whatsapp-pulse {
+  animation: pulse-whatsapp 2s infinite;
+}
+
+@keyframes pulse-whatsapp {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
